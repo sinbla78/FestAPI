@@ -2,6 +2,7 @@ from typing import Dict, Optional
 from app.models import User
 from datetime import datetime
 
+#인메모리 DB
 class InMemoryDB:
     def __init__(self):
         self.users: Dict[str, User] = {}
