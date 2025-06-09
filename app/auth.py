@@ -7,8 +7,9 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from urllib.parse import urlencode
 
 from app.config import settings
-from app.models import User, GoogleUserInfo
+from app.models import User, GoogleUserInfo, OAuthProvider
 from app.database import db
+from app.apple_auth import AppleAuthService
 
 security = HTTPBearer()
 
@@ -58,11 +59,12 @@ class AuthService:
             )
         return user
     
+    # Google OAuth 메서드들
     @staticmethod
     def get_google_auth_url() -> str:
         params = {
             "client_id": settings.google_client_id,
-            "redirect_uri": settings.redirect_uri,
+            "redirect_uri": settings.redirect_uri_google,
             "scope": "openid email profile",
             "response_type": "code",
             "access_type": "offline",
@@ -73,11 +75,10 @@ class AuthService:
     @staticmethod
     async def get_google_user_info(code: str) -> GoogleUserInfo:
         try:
-            # 액세스 토큰 요청
             token_data = {
                 "client_id": settings.google_client_id,
                 "client_secret": settings.google_client_secret,
-                "redirect_uri": settings.redirect_uri,
+                "redirect_uri": settings.redirect_uri_google,
                 "grant_type": "authorization_code",
                 "code": code
             }
@@ -87,7 +88,6 @@ class AuthService:
                 token_response.raise_for_status()
                 tokens = token_response.json()
                 
-                # 사용자 정보 가져오기
                 headers = {"Authorization": f"Bearer {tokens['access_token']}"}
                 user_response = await client.get(settings.google_user_info_url, headers=headers)
                 user_response.raise_for_status()
@@ -99,9 +99,4 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Google OAuth 인증 실패: {str(e)}"
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"서버 오류: {str(e)}"
             )
