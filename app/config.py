@@ -1,39 +1,34 @@
-import os
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
 
-load_dotenv()
-
-class Settings:
-    # Google OAuth 설정
-    google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
-    google_client_secret: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
-    redirect_uri_google: str = os.getenv("REDIRECT_URI_GOOGLE", "http://localhost:8000/auth/google/callback")
+class Settings(BaseSettings):
+    # 기본 설정
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # Apple OAuth 설정
-    apple_client_id: str = os.getenv("APPLE_CLIENT_ID", "")  # Service ID
-    apple_team_id: str = os.getenv("APPLE_TEAM_ID", "")
-    apple_key_id: str = os.getenv("APPLE_KEY_ID", "")
-    apple_private_key_path: str = os.getenv("APPLE_PRIVATE_KEY_PATH", "")
-    redirect_uri_apple: str = os.getenv("REDIRECT_URI_APPLE", "http://localhost:8000/auth/apple/callback")
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
     
-    # JWT 설정
-    jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", "your-super-secret-jwt-key-change-this-in-production")
-    jwt_algorithm: str = "HS256"
-    jwt_expiration_hours: int = 24
+    # Apple OAuth
+    APPLE_CLIENT_ID: str
+    APPLE_TEAM_ID: str
+    APPLE_KEY_ID: str
+    APPLE_PRIVATE_KEY: str
+    APPLE_REDIRECT_URI: str
     
-    # 앱 설정
-    app_name: str = "Multi OAuth 인증 서비스"
-    app_version: str = "1.0.0"
-    debug: bool = True
+    # Naver OAuth
+    NAVER_CLIENT_ID: str
+    NAVER_CLIENT_SECRET: str
+    NAVER_REDIRECT_URI: str
     
-    # Google OAuth URLs
-    google_oauth_url: str = "https://accounts.google.com/o/oauth2/auth"
-    google_token_url: str = "https://oauth2.googleapis.com/token"
-    google_user_info_url: str = "https://www.googleapis.com/oauth2/v2/userinfo"
+    # Kakao OAuth
+    KAKAO_CLIENT_ID: str
+    KAKAO_CLIENT_SECRET: str
+    KAKAO_REDIRECT_URI: str
     
-    # Apple OAuth URLs
-    apple_oauth_url: str = "https://appleid.apple.com/auth/authorize"
-    apple_token_url: str = "https://appleid.apple.com/auth/token"
-    apple_keys_url: str = "https://appleid.apple.com/auth/keys"
+    class Config:
+        env_file = ".env"
 
 settings = Settings()

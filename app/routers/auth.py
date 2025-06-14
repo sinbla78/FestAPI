@@ -5,6 +5,8 @@ from typing import Optional
 
 from app.auth import AuthService, security
 from app.apple_auth import AppleAuthService
+from app.naver_auth import NaverAuthService
+from app.kakao_auth import KakaoAuthService
 from app.models import User, UserResponse, UserUpdate, OAuthProvider
 from app.database import db
 
@@ -22,7 +24,6 @@ async def google_callback(code: str) -> UserResponse:
     """Google OAuth 콜백 처리"""
     google_user = await AuthService.get_google_user_info(code)
     
-    # 기존 사용자 확인 또는 새 사용자 생성
     user = db.get_user_by_email(google_user.email)
     if not user:
         user_data = {
@@ -52,21 +53,16 @@ async def apple_login():
 async def apple_callback(
     code: str = Form(...),
     id_token: Optional[str] = Form(None),
-    user: Optional[str] = Form(None),  # 첫 로그인시 이름 정보
+    user: Optional[str] = Form(None),
     state: Optional[str] = Form(None)
 ) -> UserResponse:
     """Apple OAuth 콜백 처리 (POST 방식)"""
     try:
-        # 애플 토큰 받기
         tokens = await AppleAuthService.get_apple_tokens(code)
-        
-        # ID 토큰에서 사용자 정보 추출
         apple_user = await AppleAuthService.verify_apple_token(tokens["id_token"])
         
-        # 첫 로그인시 이름 정보 처리
         user_name = apple_user.name
         if user and not user_name:
-            # 애플에서 보내준 user 정보 파싱
             try:
                 import json
                 user_data = json.loads(user)
@@ -80,7 +76,6 @@ async def apple_callback(
         if not user_name:
             user_name = "Apple User"
         
-        # 기존 사용자 확인 또는 새 사용자 생성
         email = apple_user.email or f"{apple_user.sub}@privaterelay.appleid.com"
         existing_user = db.get_user_by_email(email)
         
@@ -89,7 +84,7 @@ async def apple_callback(
                 "id": f"apple_{apple_user.sub}",
                 "email": email,
                 "name": user_name,
-                "picture": None,  # 애플은 프로필 사진 제공 안함
+                "picture": None,
                 "verified_email": apple_user.email_verified or False,
                 "provider": OAuthProvider.APPLE,
                 "provider_id": apple_user.sub
@@ -105,6 +100,86 @@ async def apple_callback(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Apple OAuth 인증 실패: {str(e)}"
+        )
+
+# 네이버 OAuth
+@router.get("/naver")
+async def naver_login():
+    """네이버 OAuth 로그인 시작"""
+    naver_auth_url = NaverAuthService.get_naver_auth_url()
+    return RedirectResponse(url=naver_auth_url)
+
+@router.get("/naver/callback")
+async def naver_callback(code: str, state: str) -> UserResponse:
+    """네이버 OAuth 콜백 처리"""
+    try:
+        tokens = await NaverAuthService.get_naver_tokens(code, state)
+        naver_user = await NaverAuthService.get_naver_user_info(tokens["access_token"])
+        
+        user = db.get_user_by_email(naver_user.email)
+        if not user:
+            user_data = {
+                "id": f"naver_{naver_user.id}",
+                "email": naver_user.email,
+                "name": naver_user.name,
+                "picture": naver_user.profile_image,
+                "verified_email": True,
+                "provider": OAuthProvider.NAVER,
+                "provider_id": naver_user.id
+            }
+            user = db.create_user(user_data)
+        
+        access_token = AuthService.create_access_token(data={"sub": user.email})
+        db.add_session(access_token, user.email)
+        
+        return UserResponse(user=user, access_token=access_token)
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"네이버 OAuth 인증 실패: {str(e)}"
+        )
+
+# 카카오 OAuth
+@router.get("/kakao")
+async def kakao_login():
+    """카카오 OAuth 로그인 시작"""
+    kakao_auth_url = KakaoAuthService.get_kakao_auth_url()
+    return RedirectResponse(url=kakao_auth_url)
+
+@router.get("/kakao/callback")
+async def kakao_callback(code: str) -> UserResponse:
+    """카카오 OAuth 콜백 처리"""
+    try:
+        tokens = await KakaoAuthService.get_kakao_tokens(code)
+        kakao_user = await KakaoAuthService.get_kakao_user_info(tokens["access_token"])
+        
+        email = kakao_user.email
+        if not email:
+            email = f"kakao_{kakao_user.id}@kakao.local"
+        
+        user = db.get_user_by_email(email)
+        if not user:
+            user_data = {
+                "id": f"kakao_{kakao_user.id}",
+                "email": email,
+                "name": kakao_user.nickname or "카카오 사용자",
+                "picture": kakao_user.profile_image_url,
+                "verified_email": kakao_user.email_verified if kakao_user.email else False,
+                "provider": OAuthProvider.KAKAO,
+                "provider_id": str(kakao_user.id)
+            }
+            user = db.create_user(user_data)
+        
+        access_token = AuthService.create_access_token(data={"sub": user.email})
+        db.add_session(access_token, user.email)
+        
+        return UserResponse(user=user, access_token=access_token)
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"카카오 OAuth 인증 실패: {str(e)}"
         )
 
 # 공통 엔드포인트들
