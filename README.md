@@ -4,7 +4,7 @@
 
 ### 1. Python 설치 확인
 ```bash
-python --version  # Python 3.8 이상 필요
+python --version  # Python 3.8 이상 필요합니다.
 ```
 
 ### 2. OAuth 앱 등록
