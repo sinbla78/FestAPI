@@ -31,8 +31,12 @@ FestAPI/
 │   ├── __main__.py                # Python 모듈 진입점
 │   ├── main.py                    # FastAPI 앱
 │   └── run.py                     # 서버 실행 스크립트
+├── Dockerfile                     # Docker 이미지 빌드
+├── docker-compose.yml             # Docker Compose 설정
+├── .dockerignore                  # Docker 빌드 제외 파일
 ├── requirements.txt               # 의존성
 ├── .env.example                   # 환경 변수 예시
+├── .gitignore                     # Git 제외 파일
 └── README.md
 ```
 
@@ -71,7 +75,55 @@ FestAPI/
 
 ## 🚀 설치 및 실행
 
-### 1. 가상환경 생성 및 활성화
+### 방법 A: Docker 사용 (권장)
+
+Docker를 사용하면 환경 설정 없이 바로 실행할 수 있습니다.
+
+#### 1. .env 파일 설정
+
+```bash
+# .env 파일 생성
+cp .env.example .env
+
+# .env 파일 편집하여 실제 OAuth 값 입력
+```
+
+#### 2. Docker Compose로 실행
+
+```bash
+# 개발 모드로 실행 (코드 변경 시 자동 반영)
+docker-compose up
+
+# 백그라운드 실행
+docker-compose up -d
+
+# 로그 확인
+docker-compose logs -f
+
+# 중지
+docker-compose down
+```
+
+#### 3. Docker만 사용 (Compose 없이)
+
+```bash
+# 이미지 빌드
+docker build -t festapi .
+
+# 컨테이너 실행
+docker run -p 8000:8000 --env-file .env festapi
+```
+
+#### 프로덕션 모드 실행
+
+```bash
+# 4개의 워커로 실행
+docker-compose --profile production up api-prod
+```
+
+### 방법 B: 로컬 환경에서 실행
+
+#### 1. 가상환경 생성 및 활성화
 
 ```bash
 # 가상환경 생성
@@ -237,6 +289,7 @@ curl -X POST \
 - **Authentication**: OAuth 2.0, JWT
 - **Python**: 3.8+
 - **Database**: In-Memory (개발용)
+- **Containerization**: Docker, Docker Compose
 
 ### 주요 라이브러리
 - `fastapi`: 웹 프레임워크
@@ -248,7 +301,44 @@ curl -X POST \
 
 ## 🛠️ 문제 해결
 
-### 포트 충돌
+### Docker 관련
+
+#### 컨테이너가 시작되지 않는 경우
+```bash
+# 컨테이너 로그 확인
+docker-compose logs api
+
+# 컨테이너 재시작
+docker-compose restart api
+
+# 이미지 다시 빌드
+docker-compose build --no-cache
+docker-compose up
+```
+
+#### 포트 충돌
+```bash
+# Docker Compose에서 다른 포트 사용
+# docker-compose.yml 수정: "8080:8000"
+docker-compose up
+
+# 또는 환경변수로 설정
+PORT=8080 docker-compose up
+```
+
+#### 환경변수가 적용되지 않는 경우
+```bash
+# .env 파일이 올바른 위치에 있는지 확인
+ls -la .env
+
+# 컨테이너 재시작
+docker-compose down
+docker-compose up
+```
+
+### 로컬 실행 관련
+
+#### 포트 충돌
 ```bash
 # 다른 포트로 실행
 uvicorn app.main:app --reload --port 8080

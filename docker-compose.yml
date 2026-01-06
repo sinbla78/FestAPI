@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: festapi
+    ports:
+      - "8000:8000"
+    environment:
+      # JWT 설정
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-this}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
+
+      # Google OAuth
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - REDIRECT_URI_GOOGLE=${REDIRECT_URI_GOOGLE:-http://localhost:8000/auth/google/callback}
+
+      # Apple OAuth
+      - APPLE_CLIENT_ID=${APPLE_CLIENT_ID}
+      - APPLE_TEAM_ID=${APPLE_TEAM_ID}
+      - APPLE_KEY_ID=${APPLE_KEY_ID}
+      - APPLE_PRIVATE_KEY_PATH=${APPLE_PRIVATE_KEY_PATH:-./apple_private_key.p8}
+      - REDIRECT_URI_APPLE=${REDIRECT_URI_APPLE:-http://localhost:8000/auth/apple/callback}
+
+      # Naver OAuth
+      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID}
+      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET}
+      - REDIRECT_URI_NAVER=${REDIRECT_URI_NAVER:-http://localhost:8000/auth/naver/callback}
+
+      # Kakao OAuth
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+      - REDIRECT_URI_KAKAO=${REDIRECT_URI_KAKAO:-http://localhost:8000/auth/kakao/callback}
+    volumes:
+      # 개발 모드: 코드 변경 시 자동 반영
+      - ./app:/app/app
+      # Apple private key가 있다면 마운트
+      - ./apple_private_key.p8:/app/apple_private_key.p8:ro
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # 프로덕션용 서비스 (선택사항)
+  api-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: festapi-prod
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: always
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    profiles:
+      - production
+
+networks:
+  default:
+    name: festapi-network
