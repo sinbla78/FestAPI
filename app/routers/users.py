@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 
-from app.auth import AuthService
+from app.services import AuthService
 from app.models import User
-from app.database import db
+from app.core.database import db
 
 router = APIRouter(prefix="/users", tags=["사용자"])
 

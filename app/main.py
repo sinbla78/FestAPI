@@ -1,0 +1,89 @@
+from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
+from app.routers import auth, users, protected
+
+# API 메타데이터
+tags_metadata = [
+    {
+        "name": "인증",
+        "description": "OAuth 2.0 인증 관련 엔드포인트. Google, Apple, Naver, Kakao 로그인을 지원합니다.",
+    },
+    {
+        "name": "사용자",
+        "description": "사용자 정보 조회 및 관리. **인증 필요**",
+    },
+    {
+        "name": "보호된 엔드포인트",
+        "description": "인증된 사용자만 접근 가능한 엔드포인트 예제. **인증 필요**",
+    },
+]
+
+app = FastAPI(
+    title="OAuth 인증 API",
+    description="""
+## FestAPI - OAuth 2.0 인증 서비스
+
+다양한 OAuth 제공자를 통한 소셜 로그인을 지원하는 REST API 서버입니다.
+
+### 지원하는 OAuth 제공자
+* 🔵 **Google OAuth 2.0**
+* 🍎 **Apple Sign In**
+* 💚 **Naver OAuth**
+* 💛 **Kakao OAuth**
+
+### 주요 기능
+* OAuth 2.0 소셜 로그인
+* JWT 기반 인증 및 세션 관리
+* 사용자 정보 조회 및 수정
+* 보호된 리소스 접근 제어
+
+### 인증 방법
+1. OAuth 로그인 엔드포인트를 통해 로그인
+2. 응답으로 받은 `access_token` 사용
+3. 요청 헤더에 `Authorization: Bearer <access_token>` 포함
+
+### 개발 정보
+- **GitHub**: [FestAPI Repository](https://github.com/yourorg/festapi)
+- **문의**: support@festapi.com
+    """,
+    version="1.0.0",
+    openapi_tags=tags_metadata,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    contact={
+        "name": "FestAPI Team",
+        "email": "support@festapi.com",
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+)
+
+# 라우터 등록
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(protected.router)
+
+
+@app.get("/")
+async def root():
+    """루트 엔드포인트"""
+    return {
+        "message": "OAuth 인증 API 서버",
+        "version": "1.0.0",
+        "status": "running"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """헬스 체크 엔드포인트"""
+    return {"status": "healthy"}
+
+
+@app.get("/test")
+async def test():
+    """테스트용 엔드포인트"""
+    return {"message": "API가 정상적으로 작동합니다!"}

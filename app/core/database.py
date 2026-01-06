@@ -1,22 +1,25 @@
-from typing import Dict, Optional
-from app.models import User
+from typing import Dict, Optional, TYPE_CHECKING
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from app.models import User
 
 #인메모리 DB
 class InMemoryDB:
     def __init__(self):
-        self.users: Dict[str, User] = {}
+        self.users: Dict[str, "User"] = {}
         self.active_sessions: Dict[str, str] = {}  # token -> user_email
-    
-    def create_user(self, user_data: dict) -> User:
+
+    def create_user(self, user_data: dict) -> "User":
+        from app.models import User
         user = User(**user_data)
         self.users[user.email] = user
         return user
-    
-    def get_user_by_email(self, email: str) -> Optional[User]:
+
+    def get_user_by_email(self, email: str) -> Optional["User"]:
         return self.users.get(email)
-    
-    def update_user(self, email: str, update_data: dict) -> Optional[User]:
+
+    def update_user(self, email: str, update_data: dict) -> Optional["User"]:
         user = self.users.get(email)
         if user:
             for key, value in update_data.items():
@@ -25,8 +28,8 @@ class InMemoryDB:
             user.updated_at = datetime.utcnow()
             self.users[email] = user
         return user
-    
-    def get_all_users(self) -> list[User]:
+
+    def get_all_users(self) -> list["User"]:
         return list(self.users.values())
     
     def add_session(self, token: str, email: str):

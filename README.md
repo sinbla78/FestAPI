@@ -1,173 +1,285 @@
-# OAuth FastAPI 서버 실행 가이드
+# OAuth 인증 API 서버
+
+Google, Apple, Naver, Kakao OAuth 2.0 인증을 지원하는 FastAPI 기반 REST API 서버입니다.
+
+## 📁 프로젝트 구조
+
+```
+FestAPI/
+├── app/
+│   ├── core/                      # 핵심 설정 및 인프라
+│   │   ├── config.py             # 환경 설정
+│   │   └── database.py           # 인메모리 데이터베이스
+│   ├── models/                    # 데이터 모델
+│   │   └── user.py               # User, OAuthProvider, UserResponse
+│   ├── schemas/                   # Pydantic 스키마
+│   │   ├── auth.py               # OAuth UserInfo 스키마
+│   │   └── user.py               # 사용자 스키마
+│   ├── services/                  # 비즈니스 로직
+│   │   ├── auth_service.py       # JWT 인증 서비스
+│   │   └── auth/                 # OAuth 서비스들
+│   │       ├── google.py         # Google OAuth
+│   │       ├── apple.py          # Apple OAuth
+│   │       ├── naver.py          # Naver OAuth
+│   │       └── kakao.py          # Kakao OAuth
+│   ├── routers/                   # API 라우터
+│   │   ├── auth.py               # 인증 엔드포인트
+│   │   ├── users.py              # 사용자 관리
+│   │   └── protected.py          # 보호된 엔드포인트
+│   ├── utils/                     # 유틸리티
+│   │   └── dependencies.py       # FastAPI 의존성
+│   ├── __main__.py                # Python 모듈 진입점
+│   ├── main.py                    # FastAPI 앱
+│   └── run.py                     # 서버 실행 스크립트
+├── requirements.txt               # 의존성
+├── .env.example                   # 환경 변수 예시
+└── README.md
+```
 
 ## 📋 사전 준비사항
 
-### 1. Python 설치 확인
-```bash
-python --version  # Python 3.8 이상 필요합니다.
-```
+### Python 버전
+- Python 3.8 이상 필요
 
-### 2. OAuth 앱 등록
-각 서비스에서 OAuth 앱을 등록하고 클라이언트 ID, 시크릿을 발급받아야 합니다.
+### OAuth 앱 등록
 
-**Google Cloud Console**
-- https://console.cloud.google.com/
-- OAuth 2.0 클라이언트 ID 생성
-- 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
+각 OAuth 제공자에서 애플리케이션을 등록하고 인증 정보를 발급받아야 합니다.
 
-**Apple Developer**
-- https://developer.apple.com/
-- Sign In with Apple 설정
-- 리디렉션 URI: `http://localhost:8000/auth/apple/callback`
+#### Google OAuth
+1. [Google Cloud Console](https://console.cloud.google.com/) 접속
+2. 프로젝트 생성 또는 선택
+3. "API 및 서비스" → "사용자 인증 정보"
+4. "OAuth 2.0 클라이언트 ID" 생성
+5. 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
 
-**네이버 개발자센터**
-- https://developers.naver.com/
-- 애플리케이션 등록
-- 콜백 URL: `http://localhost:8000/auth/naver/callback`
+#### Apple OAuth
+1. [Apple Developer](https://developer.apple.com/) 가입 (연 $99)
+2. Certificates, Identifiers & Profiles → Keys
+3. "Sign in with Apple" 활성화된 키 생성
+4. .p8 파일 다운로드 (한 번만 가능!)
+5. Service IDs 생성 및 Return URL 설정: `http://localhost:8000/auth/apple/callback`
 
-**카카오 개발자센터**
-- https://developers.kakao.com/
-- 애플리케이션 추가
-- Redirect URI: `http://localhost:8000/auth/kakao/callback`
+#### Naver OAuth
+1. [네이버 개발자센터](https://developers.naver.com/) 접속
+2. 애플리케이션 등록
+3. 서비스 URL 및 콜백 URL 설정: `http://localhost:8000/auth/naver/callback`
 
-## 🚀 실행 방법
+#### Kakao OAuth
+1. [카카오 개발자센터](https://developers.kakao.com/) 접속
+2. 애플리케이션 추가
+3. 플랫폼 설정에서 Redirect URI 등록: `http://localhost:8000/auth/kakao/callback`
 
-### 방법 1: 자동 설정 스크립트 사용
+## 🚀 설치 및 실행
 
-```bash
-# 스크립트 실행 권한 부여
-chmod +x setup.sh
+### 1. 가상환경 생성 및 활성화
 
-# 자동 설정 실행
-./setup.sh
-```
-
-### 방법 2: 수동 설정
-
-#### 1단계: 가상환경 생성 및 활성화
 ```bash
 # 가상환경 생성
 python -m venv venv
 
 # 가상환경 활성화
-# Windows:
-venv\Scripts\activate
 # macOS/Linux:
 source venv/bin/activate
+# Windows:
+venv\Scripts\activate
 ```
 
-#### 2단계: 패키지 설치
+### 2. 의존성 설치
+
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-#### 3단계: 환경설정
+### 3. 환경 설정
+
 ```bash
 # .env 파일 생성
 cp .env.example .env
 
-# .env 파일 편집 (실제 OAuth 값 입력)
-nano .env  # 또는 원하는 에디터 사용
+# .env 파일 편집하여 실제 OAuth 값 입력
+# (에디터로 .env 파일을 열어 수정)
 ```
 
-#### 4단계: 프로젝트 구조 확인
-```
-프로젝트/
-├── main.py
-├── requirements.txt
-├── .env
-├── .env.example
-├── setup.sh
-└── app/
-    ├── __init__.py
-    ├── models.py
-    ├── config.py
-    ├── auth.py           # 기존 파일
-    ├── apple_auth.py     # 기존 파일
-    ├── naver_auth.py     # 새로 생성
-    ├── kakao_auth.py     # 새로 생성
-    ├── database.py       # 기존 파일
-    └── routers/
-        ├── __init__.py
-        ├── auth.py
-        ├── protected.py
-        └── users.py
+`.env` 파일 예시:
+```env
+# JWT 설정
+JWT_SECRET_KEY=your-super-secret-jwt-key-change-this
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+REDIRECT_URI_GOOGLE=http://localhost:8000/auth/google/callback
+
+# Apple OAuth (선택)
+APPLE_CLIENT_ID=com.yourcompany.yourapp.signin
+APPLE_TEAM_ID=YOUR_TEAM_ID
+APPLE_KEY_ID=YOUR_KEY_ID
+APPLE_PRIVATE_KEY_PATH=./apple_private_key.p8
+REDIRECT_URI_APPLE=http://localhost:8000/auth/apple/callback
+
+# Naver OAuth (선택)
+NAVER_CLIENT_ID=your-naver-client-id
+NAVER_CLIENT_SECRET=your-naver-client-secret
+REDIRECT_URI_NAVER=http://localhost:8000/auth/naver/callback
+
+# Kakao OAuth (선택)
+KAKAO_CLIENT_ID=your-kakao-client-id
+KAKAO_CLIENT_SECRET=your-kakao-client-secret
+REDIRECT_URI_KAKAO=http://localhost:8000/auth/kakao/callback
 ```
 
-## ▶️ 서버 실행
+### 4. 서버 실행
 
-### 개발 서버 실행
 ```bash
-uvicorn main:app --reload
+# 방법 1: Python 모듈로 실행 (권장)
+python -m app
+
+# 방법 2: uvicorn 직접 사용
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# 방법 3: run.py 직접 실행
+python app/run.py
 ```
 
-### 프로덕션 서버 실행
+서버가 시작되면 다음 주소에서 접속 가능합니다:
+- 홈페이지: http://localhost:8000
+- API 문서 (Swagger): http://localhost:8000/docs
+- API 문서 (ReDoc): http://localhost:8000/redoc
+
+## 📖 API 엔드포인트
+
+### 인증 (Authentication)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/auth/google` | Google OAuth 로그인 시작 |
+| GET | `/auth/google/callback` | Google OAuth 콜백 |
+| GET | `/auth/apple` | Apple OAuth 로그인 시작 |
+| POST | `/auth/apple/callback` | Apple OAuth 콜백 |
+| GET | `/auth/naver` | Naver OAuth 로그인 시작 |
+| GET | `/auth/naver/callback` | Naver OAuth 콜백 |
+| GET | `/auth/kakao` | Kakao OAuth 로그인 시작 |
+| GET | `/auth/kakao/callback` | Kakao OAuth 콜백 |
+| GET | `/auth/me` | 현재 사용자 정보 조회 |
+| PUT | `/auth/me` | 현재 사용자 정보 수정 |
+| POST | `/auth/logout` | 로그아웃 |
+
+### 사용자 (Users)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/users/` | 모든 사용자 조회 (인증 필요) |
+| GET | `/users/{email}` | 특정 사용자 조회 (인증 필요) |
+
+### 보호된 엔드포인트 (Protected)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/protected/` | 보호된 엔드포인트 예제 |
+| GET | `/protected/admin` | 관리자 전용 엔드포인트 예제 |
+
+## 🧪 사용 예시
+
+### 1. OAuth 로그인
+
+브라우저에서 접속:
+```
+http://localhost:8000/auth/google
+http://localhost:8000/auth/kakao
+```
+
+로그인 성공 시 응답:
+```json
+{
+  "user": {
+    "id": "google_123456789",
+    "email": "user@example.com",
+    "name": "홍길동",
+    "picture": "https://...",
+    "verified_email": true,
+    "provider": "google",
+    "provider_id": "123456789"
+  },
+  "access_token": "eyJhbGc..."
+}
+```
+
+### 2. 인증된 API 호출
+
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+# 현재 사용자 정보 조회
+curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  http://localhost:8000/auth/me
+
+# 사용자 정보 수정
+curl -X PUT \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"새이름"}' \
+  http://localhost:8000/auth/me
 ```
 
-### 포트 변경
+### 3. 로그아웃
+
 ```bash
-uvicorn main:app --reload --port 3000
+curl -X POST \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  http://localhost:8000/auth/logout
 ```
 
-## 📖 API 문서 확인
+## 🔧 개발 정보
 
-서버가 실행되면 다음 URL에서 확인할 수 있습니다:
+### 기술 스택
+- **Framework**: FastAPI 0.104.1
+- **Authentication**: OAuth 2.0, JWT
+- **Python**: 3.8+
+- **Database**: In-Memory (개발용)
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **OpenAPI JSON**: http://localhost:8000/openapi.json
+### 주요 라이브러리
+- `fastapi`: 웹 프레임워크
+- `uvicorn`: ASGI 서버
+- `pydantic`: 데이터 검증
+- `PyJWT`: JWT 토큰 관리
+- `httpx`: 비동기 HTTP 클라이언트
+- `cryptography`: 암호화 (Apple OAuth)
 
-## 🧪 API 테스트
+## 🛠️ 문제 해결
 
-### 1. 헬스 체크
-```bash
-curl http://localhost:8000/health
-```
-
-### 2. OAuth 로그인 테스트
-브라우저에서 다음 URL 접속:
-- Google: http://localhost:8000/auth/google
-- Apple: http://localhost:8000/auth/apple
-- 네이버: http://localhost:8000/auth/naver
-- 카카오: http://localhost:8000/auth/kakao
-
-### 3. 보호된 엔드포인트 테스트
-```bash
-# 로그인 후 받은 토큰 사용
-curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8000/protected/
-```
-
-## 🔧 문제 해결
-
-### 포트 충돌 오류
+### 포트 충돌
 ```bash
 # 다른 포트로 실행
-uvicorn main:app --reload --port 8080
+uvicorn app.main:app --reload --port 8080
 ```
+
+### OAuth 콜백 오류
+1. OAuth 제공자 설정에서 리디렉션 URI 확인
+2. `.env` 파일의 CLIENT_ID, CLIENT_SECRET 확인
+3. 로컬호스트 포트 일치 여부 확인
 
 ### 패키지 설치 오류
 ```bash
-# pip 업그레이드
 pip install --upgrade pip setuptools wheel
-
-# 캐시 클리어 후 재설치
 pip cache purge
 pip install -r requirements.txt
 ```
 
-### OAuth 콜백 오류
-1. 각 OAuth 서비스에서 리디렉션 URI가 정확히 설정되었는지 확인
-2. .env 파일의 CLIENT_ID, CLIENT_SECRET 값 확인
-3. 서버가 실제로 실행 중인 포트와 콜백 URL 포트 일치 확인
+## 📝 TODO
 
-## 📝 추가 개발 사항
+- [ ] 실제 데이터베이스 연동 (PostgreSQL, MySQL 등)
+- [ ] Redis 기반 세션 관리
+- [ ] 리프레시 토큰 구현
+- [ ] 사용자 권한 관리 (Role-based Access Control)
+- [ ] API Rate Limiting
+- [ ] 로깅 시스템
+- [ ] 단위 테스트 및 통합 테스트
 
-현재 구현에서 추가로 필요한 부분들:
-1. `app/auth.py` - 기존 Google 인증 서비스
-2. `app/apple_auth.py` - 기존 Apple 인증 서비스  
-3. `app/database.py` - 데이터베이스 연결 및 사용자 관리
-4. JWT 토큰 생성/검증 로직
-5. 세션 관리 시스템
+## 📄 License
+
+MIT License
+
+## 👨‍💻 Author
+
+FestAPI Team

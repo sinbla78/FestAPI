@@ -3,26 +3,68 @@ from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from typing import Optional
 
-from app.auth import AuthService, security
-from app.apple_auth import AppleAuthService
-from app.naver_auth import NaverAuthService
-from app.kakao_auth import KakaoAuthService
-from app.models import User, UserResponse, UserUpdate, OAuthProvider
-from app.database import db
+from app.services import AuthService, GoogleAuthService, AppleAuthService, NaverAuthService, KakaoAuthService
+from app.services.auth_service import security
+from app.models import User, OAuthProvider, UserResponse
+from app.schemas import UserUpdate
+from app.core.database import db
 
 router = APIRouter(prefix="/auth", tags=["인증"])
 
 # Google OAuth
-@router.get("/google")
+@router.get(
+    "/google",
+    summary="Google OAuth 로그인",
+    description="""
+    Google OAuth 2.0 인증을 시작합니다.
+
+    이 엔드포인트는 Google 로그인 페이지로 리디렉션합니다.
+    사용자가 Google에서 인증을 완료하면 `/auth/google/callback`으로 돌아옵니다.
+    """,
+    response_class=RedirectResponse,
+)
 async def google_login():
     """Google OAuth 로그인 시작"""
-    google_auth_url = AuthService.get_google_auth_url()
+    google_auth_url = GoogleAuthService.get_auth_url()
     return RedirectResponse(url=google_auth_url)
 
-@router.get("/google/callback")
+@router.get(
+    "/google/callback",
+    summary="Google OAuth 콜백",
+    description="""
+    Google OAuth 인증 완료 후 호출되는 콜백 엔드포인트입니다.
+
+    - 사용자 정보를 Google에서 가져옵니다
+    - 신규 사용자인 경우 자동으로 회원가입합니다
+    - JWT 액세스 토큰을 생성하여 반환합니다
+    """,
+    response_model=UserResponse,
+    responses={
+        200: {
+            "description": "로그인 성공",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "user": {
+                            "id": "google_123456789",
+                            "email": "user@gmail.com",
+                            "name": "홍길동",
+                            "picture": "https://lh3.googleusercontent.com/a/default-user",
+                            "verified_email": True,
+                            "provider": "google",
+                            "provider_id": "123456789"
+                        },
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                }
+            }
+        },
+        400: {"description": "OAuth 인증 실패"}
+    }
+)
 async def google_callback(code: str) -> UserResponse:
     """Google OAuth 콜백 처리"""
-    google_user = await AuthService.get_google_user_info(code)
+    google_user = await GoogleAuthService.get_user_info(code)
     
     user = db.get_user_by_email(google_user.email)
     if not user:
@@ -46,7 +88,7 @@ async def google_callback(code: str) -> UserResponse:
 @router.get("/apple")
 async def apple_login():
     """Apple OAuth 로그인 시작"""
-    apple_auth_url = AppleAuthService.get_apple_auth_url()
+    apple_auth_url = AppleAuthService.get_auth_url()
     return RedirectResponse(url=apple_auth_url)
 
 @router.post("/apple/callback")
@@ -58,8 +100,8 @@ async def apple_callback(
 ) -> UserResponse:
     """Apple OAuth 콜백 처리 (POST 방식)"""
     try:
-        tokens = await AppleAuthService.get_apple_tokens(code)
-        apple_user = await AppleAuthService.verify_apple_token(tokens["id_token"])
+        tokens = await AppleAuthService.get_tokens(code)
+        apple_user = await AppleAuthService.verify_token(tokens["id_token"])
         
         user_name = apple_user.name
         if user and not user_name:
@@ -106,15 +148,15 @@ async def apple_callback(
 @router.get("/naver")
 async def naver_login():
     """네이버 OAuth 로그인 시작"""
-    naver_auth_url = NaverAuthService.get_naver_auth_url()
+    naver_auth_url = NaverAuthService.get_auth_url()
     return RedirectResponse(url=naver_auth_url)
 
 @router.get("/naver/callback")
 async def naver_callback(code: str, state: str) -> UserResponse:
     """네이버 OAuth 콜백 처리"""
     try:
-        tokens = await NaverAuthService.get_naver_tokens(code, state)
-        naver_user = await NaverAuthService.get_naver_user_info(tokens["access_token"])
+        tokens = await NaverAuthService.get_tokens(code, state)
+        naver_user = await NaverAuthService.get_user_info(tokens["access_token"])
         
         user = db.get_user_by_email(naver_user.email)
         if not user:
@@ -144,15 +186,15 @@ async def naver_callback(code: str, state: str) -> UserResponse:
 @router.get("/kakao")
 async def kakao_login():
     """카카오 OAuth 로그인 시작"""
-    kakao_auth_url = KakaoAuthService.get_kakao_auth_url()
+    kakao_auth_url = KakaoAuthService.get_auth_url()
     return RedirectResponse(url=kakao_auth_url)
 
 @router.get("/kakao/callback")
 async def kakao_callback(code: str) -> UserResponse:
     """카카오 OAuth 콜백 처리"""
     try:
-        tokens = await KakaoAuthService.get_kakao_tokens(code)
-        kakao_user = await KakaoAuthService.get_kakao_user_info(tokens["access_token"])
+        tokens = await KakaoAuthService.get_tokens(code)
+        kakao_user = await KakaoAuthService.get_user_info(tokens["access_token"])
         
         email = kakao_user.email
         if not email:
@@ -164,7 +206,7 @@ async def kakao_callback(code: str) -> UserResponse:
                 "id": f"kakao_{kakao_user.id}",
                 "email": email,
                 "name": kakao_user.nickname or "카카오 사용자",
-                "picture": kakao_user.profile_image_url,
+                "picture": kakao_user.profile_image or kakao_user.profile_image_url,
                 "verified_email": kakao_user.email_verified if kakao_user.email else False,
                 "provider": OAuthProvider.KAKAO,
                 "provider_id": str(kakao_user.id)
@@ -183,12 +225,44 @@ async def kakao_callback(code: str) -> UserResponse:
         )
 
 # 공통 엔드포인트들
-@router.get("/me", response_model=User)
+@router.get(
+    "/me",
+    response_model=User,
+    summary="현재 사용자 정보 조회",
+    description="""
+    인증된 사용자의 프로필 정보를 조회합니다.
+
+    **인증 필요**: Bearer 토큰을 헤더에 포함해야 합니다.
+    """,
+    responses={
+        200: {"description": "사용자 정보 조회 성공"},
+        401: {"description": "인증 실패"},
+        404: {"description": "사용자를 찾을 수 없음"}
+    }
+)
 async def get_current_user_profile(current_user: User = Depends(AuthService.get_current_user)):
     """현재 사용자 프로필 조회"""
     return current_user
 
-@router.put("/me", response_model=User)
+@router.put(
+    "/me",
+    response_model=User,
+    summary="현재 사용자 정보 수정",
+    description="""
+    인증된 사용자의 프로필 정보를 수정합니다.
+
+    **인증 필요**: Bearer 토큰을 헤더에 포함해야 합니다.
+
+    수정 가능한 필드:
+    - name: 사용자 이름
+    - picture: 프로필 이미지 URL
+    """,
+    responses={
+        200: {"description": "사용자 정보 수정 성공"},
+        401: {"description": "인증 실패"},
+        404: {"description": "사용자를 찾을 수 없음"}
+    }
+)
 async def update_current_user(
     user_update: UserUpdate,
     current_user: User = Depends(AuthService.get_current_user)
@@ -196,16 +270,35 @@ async def update_current_user(
     """현재 사용자 정보 업데이트"""
     update_data = user_update.dict(exclude_unset=True)
     updated_user = db.update_user(current_user.email, update_data)
-    
+
     if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="사용자를 찾을 수 없습니다."
         )
-    
+
     return updated_user
 
-@router.post("/logout")
+@router.post(
+    "/logout",
+    summary="로그아웃",
+    description="""
+    현재 세션을 종료하고 로그아웃합니다.
+
+    **인증 필요**: Bearer 토큰을 헤더에 포함해야 합니다.
+    """,
+    responses={
+        200: {
+            "description": "로그아웃 성공",
+            "content": {
+                "application/json": {
+                    "example": {"message": "성공적으로 로그아웃되었습니다."}
+                }
+            }
+        },
+        401: {"description": "인증 실패"}
+    }
+)
 async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """로그아웃"""
     token = credentials.credentials
