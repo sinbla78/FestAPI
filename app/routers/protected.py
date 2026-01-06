@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.auth import AuthService
+from app.services import AuthService
 from app.models import User
 
 router = APIRouter(prefix="/protected", tags=["보호된 엔드포인트"])

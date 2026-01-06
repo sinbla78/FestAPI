@@ -3,11 +3,10 @@ from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse
 from typing import Optional
 
-from app.auth import AuthService, security
-from app.apple_auth import AppleAuthService
-from app.naver_auth import NaverAuthService
-from app.kakao_auth import KakaoAuthService
-from app.models import User, UserResponse, UserUpdate, OAuthProvider
+from app.services import AuthService, GoogleAuthService, AppleAuthService, NaverAuthService, KakaoAuthService
+from app.services.auth_service import security
+from app.models import User, OAuthProvider, UserResponse
+from app.schemas import UserUpdate
 from app.database import db
 
 router = APIRouter(prefix="/auth", tags=["인증"])
@@ -16,13 +15,13 @@ router = APIRouter(prefix="/auth", tags=["인증"])
 @router.get("/google")
 async def google_login():
     """Google OAuth 로그인 시작"""
-    google_auth_url = AuthService.get_google_auth_url()
+    google_auth_url = GoogleAuthService.get_auth_url()
     return RedirectResponse(url=google_auth_url)
 
 @router.get("/google/callback")
 async def google_callback(code: str) -> UserResponse:
     """Google OAuth 콜백 처리"""
-    google_user = await AuthService.get_google_user_info(code)
+    google_user = await GoogleAuthService.get_user_info(code)
     
     user = db.get_user_by_email(google_user.email)
     if not user:
@@ -46,7 +45,7 @@ async def google_callback(code: str) -> UserResponse:
 @router.get("/apple")
 async def apple_login():
     """Apple OAuth 로그인 시작"""
-    apple_auth_url = AppleAuthService.get_apple_auth_url()
+    apple_auth_url = AppleAuthService.get_auth_url()
     return RedirectResponse(url=apple_auth_url)
 
 @router.post("/apple/callback")
@@ -58,8 +57,8 @@ async def apple_callback(
 ) -> UserResponse:
     """Apple OAuth 콜백 처리 (POST 방식)"""
     try:
-        tokens = await AppleAuthService.get_apple_tokens(code)
-        apple_user = await AppleAuthService.verify_apple_token(tokens["id_token"])
+        tokens = await AppleAuthService.get_tokens(code)
+        apple_user = await AppleAuthService.verify_token(tokens["id_token"])
         
         user_name = apple_user.name
         if user and not user_name:
@@ -106,15 +105,15 @@ async def apple_callback(
 @router.get("/naver")
 async def naver_login():
     """네이버 OAuth 로그인 시작"""
-    naver_auth_url = NaverAuthService.get_naver_auth_url()
+    naver_auth_url = NaverAuthService.get_auth_url()
     return RedirectResponse(url=naver_auth_url)
 
 @router.get("/naver/callback")
 async def naver_callback(code: str, state: str) -> UserResponse:
     """네이버 OAuth 콜백 처리"""
     try:
-        tokens = await NaverAuthService.get_naver_tokens(code, state)
-        naver_user = await NaverAuthService.get_naver_user_info(tokens["access_token"])
+        tokens = await NaverAuthService.get_tokens(code, state)
+        naver_user = await NaverAuthService.get_user_info(tokens["access_token"])
         
         user = db.get_user_by_email(naver_user.email)
         if not user:
@@ -144,15 +143,15 @@ async def naver_callback(code: str, state: str) -> UserResponse:
 @router.get("/kakao")
 async def kakao_login():
     """카카오 OAuth 로그인 시작"""
-    kakao_auth_url = KakaoAuthService.get_kakao_auth_url()
+    kakao_auth_url = KakaoAuthService.get_auth_url()
     return RedirectResponse(url=kakao_auth_url)
 
 @router.get("/kakao/callback")
 async def kakao_callback(code: str) -> UserResponse:
     """카카오 OAuth 콜백 처리"""
     try:
-        tokens = await KakaoAuthService.get_kakao_tokens(code)
-        kakao_user = await KakaoAuthService.get_kakao_user_info(tokens["access_token"])
+        tokens = await KakaoAuthService.get_tokens(code)
+        kakao_user = await KakaoAuthService.get_user_info(tokens["access_token"])
         
         email = kakao_user.email
         if not email:
@@ -164,7 +163,7 @@ async def kakao_callback(code: str) -> UserResponse:
                 "id": f"kakao_{kakao_user.id}",
                 "email": email,
                 "name": kakao_user.nickname or "카카오 사용자",
-                "picture": kakao_user.profile_image_url,
+                "picture": kakao_user.profile_image or kakao_user.profile_image_url,
                 "verified_email": kakao_user.email_verified if kakao_user.email else False,
                 "provider": OAuthProvider.KAKAO,
                 "provider_id": str(kakao_user.id)

@@ -3,7 +3,7 @@ from app.config import settings
 
 def print_oauth_setup_guide():
     """OAuth 설정 가이드 출력"""
-    print(f"🚀 {settings.app_name} v{settings.app_version} 서버를 시작합니다...")
+    print("🚀 OAuth 인증 API 서버를 시작합니다...")
     print()
     print("📝 OAuth 설정 가이드:")
     print()
@@ -75,10 +75,10 @@ def print_oauth_setup_guide():
 
 if __name__ == "__main__":
     print_oauth_setup_guide()
-    
+
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.debug
+        reload=True
     )

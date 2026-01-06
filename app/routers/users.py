@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 
-from app.auth import AuthService
+from app.services import AuthService
 from app.models import User
 from app.database import db
 
