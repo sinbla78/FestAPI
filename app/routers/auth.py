@@ -12,13 +12,56 @@ from app.core.database import db
 router = APIRouter(prefix="/auth", tags=["인증"])
 
 # Google OAuth
-@router.get("/google")
+@router.get(
+    "/google",
+    summary="Google OAuth 로그인",
+    description="""
+    Google OAuth 2.0 인증을 시작합니다.
+
+    이 엔드포인트는 Google 로그인 페이지로 리디렉션합니다.
+    사용자가 Google에서 인증을 완료하면 `/auth/google/callback`으로 돌아옵니다.
+    """,
+    response_class=RedirectResponse,
+)
 async def google_login():
     """Google OAuth 로그인 시작"""
     google_auth_url = GoogleAuthService.get_auth_url()
     return RedirectResponse(url=google_auth_url)
 
-@router.get("/google/callback")
+@router.get(
+    "/google/callback",
+    summary="Google OAuth 콜백",
+    description="""
+    Google OAuth 인증 완료 후 호출되는 콜백 엔드포인트입니다.
+
+    - 사용자 정보를 Google에서 가져옵니다
+    - 신규 사용자인 경우 자동으로 회원가입합니다
+    - JWT 액세스 토큰을 생성하여 반환합니다
+    """,
+    response_model=UserResponse,
+    responses={
+        200: {
+            "description": "로그인 성공",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "user": {
+                            "id": "google_123456789",
+                            "email": "user@gmail.com",
+                            "name": "홍길동",
+                            "picture": "https://lh3.googleusercontent.com/a/default-user",
+                            "verified_email": True,
+                            "provider": "google",
+                            "provider_id": "123456789"
+                        },
+                        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    }
+                }
+            }
+        },
+        400: {"description": "OAuth 인증 실패"}
+    }
+)
 async def google_callback(code: str) -> UserResponse:
     """Google OAuth 콜백 처리"""
     google_user = await GoogleAuthService.get_user_info(code)
@@ -182,12 +225,44 @@ async def kakao_callback(code: str) -> UserResponse:
         )
 
 # 공통 엔드포인트들
-@router.get("/me", response_model=User)
+@router.get(
+    "/me",
+    response_model=User,
+    summary="현재 사용자 정보 조회",
+    description="""
+    인증된 사용자의 프로필 정보를 조회합니다.
+
+    **인증 필요**: Bearer 토큰을 헤더에 포함해야 합니다.
+    """,
+    responses={
+        200: {"description": "사용자 정보 조회 성공"},
+        401: {"description": "인증 실패"},
+        404: {"description": "사용자를 찾을 수 없음"}
+    }
+)
 async def get_current_user_profile(current_user: User = Depends(AuthService.get_current_user)):
     """현재 사용자 프로필 조회"""
     return current_user
 
-@router.put("/me", response_model=User)
+@router.put(
+    "/me",
+    response_model=User,
+    summary="현재 사용자 정보 수정",
+    description="""
+    인증된 사용자의 프로필 정보를 수정합니다.
+
+    **인증 필요**: Bearer 토큰을 헤더에 포함해야 합니다.
+
+    수정 가능한 필드:
+    - name: 사용자 이름
+    - picture: 프로필 이미지 URL
+    """,
+    responses={
+        200: {"description": "사용자 정보 수정 성공"},
+        401: {"description": "인증 실패"},
+        404: {"description": "사용자를 찾을 수 없음"}
+    }
+)
 async def update_current_user(
     user_update: UserUpdate,
     current_user: User = Depends(AuthService.get_current_user)
@@ -195,16 +270,35 @@ async def update_current_user(
     """현재 사용자 정보 업데이트"""
     update_data = user_update.dict(exclude_unset=True)
     updated_user = db.update_user(current_user.email, update_data)
-    
+
     if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="사용자를 찾을 수 없습니다."
         )
-    
+
     return updated_user
 
-@router.post("/logout")
+@router.post(
+    "/logout",
+    summary="로그아웃",
+    description="""
+    현재 세션을 종료하고 로그아웃합니다.
+
+    **인증 필요**: Bearer 토큰을 헤더에 포함해야 합니다.
+    """,
+    responses={
+        200: {
+            "description": "로그아웃 성공",
+            "content": {
+                "application/json": {
+                    "example": {"message": "성공적으로 로그아웃되었습니다."}
+                }
+            }
+        },
+        401: {"description": "인증 실패"}
+    }
+)
 async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """로그아웃"""
     token = credentials.credentials

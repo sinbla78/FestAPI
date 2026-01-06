@@ -1,5 +1,5 @@
 from typing import Optional, TYPE_CHECKING
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 if TYPE_CHECKING:
     from app.models import User
@@ -19,8 +19,16 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     """사용자 업데이트 스키마"""
-    name: Optional[str] = None
-    picture: Optional[str] = None
+    name: Optional[str] = Field(None, description="변경할 사용자 이름", example="김철수")
+    picture: Optional[str] = Field(None, description="변경할 프로필 이미지 URL", example="https://example.com/new-avatar.jpg")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "김철수",
+                "picture": "https://example.com/new-avatar.jpg"
+            }
+        }
 
 
 class UserResponse(BaseModel):
