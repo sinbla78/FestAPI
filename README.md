@@ -28,9 +28,9 @@ FestAPI/
 │   │   └── protected.py          # 보호된 엔드포인트
 │   ├── utils/                     # 유틸리티
 │   │   └── dependencies.py       # FastAPI 의존성
-│   └── main.py                    # FastAPI 앱
-├── main.py                        # 앱 재export (하위 호환성)
-├── run.py                         # 서버 실행 스크립트
+│   ├── __main__.py                # Python 모듈 진입점
+│   ├── main.py                    # FastAPI 앱
+│   └── run.py                     # 서버 실행 스크립트
 ├── requirements.txt               # 의존성
 ├── .env.example                   # 환경 변수 예시
 └── README.md
@@ -134,11 +134,14 @@ REDIRECT_URI_KAKAO=http://localhost:8000/auth/kakao/callback
 ### 4. 서버 실행
 
 ```bash
-# run.py 사용 (권장)
-python run.py
+# 방법 1: Python 모듈로 실행 (권장)
+python -m app
 
-# 또는 uvicorn 직접 사용
+# 방법 2: uvicorn 직접 사용
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# 방법 3: run.py 직접 실행
+python app/run.py
 ```
 
 서버가 시작되면 다음 주소에서 접속 가능합니다:
