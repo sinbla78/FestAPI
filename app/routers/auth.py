@@ -7,7 +7,7 @@ from app.services import AuthService, GoogleAuthService, AppleAuthService, Naver
 from app.services.auth_service import security
 from app.models import User, OAuthProvider, UserResponse
 from app.schemas import UserUpdate
-from app.database import db
+from app.core.database import db
 
 router = APIRouter(prefix="/auth", tags=["인증"])
 

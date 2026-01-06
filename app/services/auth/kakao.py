@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException, status
 from urllib.parse import urlencode
 
-from app.config import settings
+from app.core.config import settings
 from app.schemas.auth import KakaoUserInfo
 
 

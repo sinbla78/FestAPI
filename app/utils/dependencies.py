@@ -1,7 +1,7 @@
 from fastapi import Depends
 from app.models import User
 from app.services.auth_service import AuthService
-from app.database import db as database
+from app.core.database import db as database
 
 
 def get_current_user(current_user: User = Depends(AuthService.get_current_user)) -> User:

@@ -1,5 +1,5 @@
 import uvicorn
-from app.config import settings
+from app.core.config import settings
 
 def print_oauth_setup_guide():
     """OAuth 설정 가이드 출력"""

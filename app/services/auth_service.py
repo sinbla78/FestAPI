@@ -4,9 +4,9 @@ from typing import Optional
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from app.config import settings
+from app.core.config import settings
 from app.models import User
-from app.database import db
+from app.core.database import db
 
 security = HTTPBearer()
 
