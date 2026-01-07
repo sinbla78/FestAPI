@@ -228,6 +228,17 @@ python app/run.py
 | GET | `/users/` | 모든 사용자 조회 (인증 필요) |
 | GET | `/users/{email}` | 특정 사용자 조회 (인증 필요) |
 
+### 게시글 (Posts)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/posts/` | 게시글 작성 (인증 필요) |
+| GET | `/posts/` | 게시글 목록 조회 (최신순) |
+| GET | `/posts/me` | 내가 작성한 게시글 조회 (인증 필요) |
+| GET | `/posts/{post_id}` | 게시글 상세 조회 |
+| PUT | `/posts/{post_id}` | 게시글 수정 (작성자만, 인증 필요) |
+| DELETE | `/posts/{post_id}` | 게시글 삭제 (작성자만, 인증 필요) |
+
 ### 보호된 엔드포인트 (Protected)
 
 | Method | Endpoint | Description |
@@ -292,6 +303,39 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"refresh_token":"YOUR_REFRESH_TOKEN"}' \
   http://localhost:8000/auth/refresh
+```
+
+### 5. 게시글 CRUD
+
+```bash
+# 게시글 작성
+curl -X POST \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"제목","content":"내용"}' \
+  http://localhost:8000/posts/
+
+# 게시글 목록 조회
+curl http://localhost:8000/posts/
+
+# 내가 작성한 게시글 조회
+curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  http://localhost:8000/posts/me
+
+# 게시글 상세 조회
+curl http://localhost:8000/posts/{post_id}
+
+# 게시글 수정
+curl -X PUT \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"수정된 제목"}' \
+  http://localhost:8000/posts/{post_id}
+
+# 게시글 삭제
+curl -X DELETE \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  http://localhost:8000/posts/{post_id}
 ```
 
 ## 🔧 개발 정보

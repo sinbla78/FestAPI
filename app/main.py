@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
-from app.routers import auth, users, protected
+from app.routers import auth, users, protected, posts
 
 # API 메타데이터
 tags_metadata = [
@@ -11,6 +11,10 @@ tags_metadata = [
     {
         "name": "사용자",
         "description": "사용자 정보 조회 및 관리. **인증 필요**",
+    },
+    {
+        "name": "게시글",
+        "description": "게시글 CRUD 기능. 작성, 조회, 수정, 삭제를 지원합니다.",
     },
     {
         "name": "보호된 엔드포인트",
@@ -64,6 +68,7 @@ app = FastAPI(
 # 라우터 등록
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(posts.router)
 app.include_router(protected.router)
 
 
