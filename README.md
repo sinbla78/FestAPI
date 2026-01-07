@@ -1,571 +1,167 @@
-# OAuth 인증 API 서버
+# FestAPI - OAuth 인증 서버
 
 [![CI](https://github.com/yourorg/festapi/actions/workflows/ci.yml/badge.svg)](https://github.com/yourorg/festapi/actions/workflows/ci.yml)
 [![Docker](https://github.com/yourorg/festapi/actions/workflows/docker.yml/badge.svg)](https://github.com/yourorg/festapi/actions/workflows/docker.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
 
-Google, Apple, Naver, Kakao OAuth 2.0 인증을 지원하는 FastAPI 기반 REST API 서버입니다.
+Google, Apple, Naver, Kakao OAuth 2.0 인증을 지원하는 FastAPI 기반 REST API 서버
 
-## 📁 프로젝트 구조
+## ✨ 주요 기능
 
-```
-FestAPI/
-├── .github/
-│   └── workflows/                 # GitHub Actions 워크플로우
-│       ├── ci.yml                # CI 파이프라인
-│       ├── docker.yml            # Docker 빌드 & 푸시
-│       └── deploy.yml            # 배포 자동화
-├── app/
-│   ├── core/                      # 핵심 설정 및 인프라
-│   │   ├── config.py             # 환경 설정
-│   │   └── database.py           # 인메모리 데이터베이스
-│   ├── models/                    # 데이터 모델
-│   │   ├── user.py               # User, OAuthProvider, UserResponse
-│   │   └── post.py               # Post, PostCreate, PostUpdate
-│   ├── schemas/                   # Pydantic 스키마
-│   │   ├── auth.py               # OAuth UserInfo 스키마
-│   │   └── user.py               # 사용자 스키마
-│   ├── services/                  # 비즈니스 로직
-│   │   ├── auth_service.py       # JWT 인증 서비스
-│   │   └── auth/                 # OAuth 서비스들
-│   │       ├── google.py         # Google OAuth
-│   │       ├── apple.py          # Apple OAuth
-│   │       ├── naver.py          # Naver OAuth
-│   │       └── kakao.py          # Kakao OAuth
-│   ├── routers/                   # API 라우터
-│   │   ├── auth.py               # 인증 엔드포인트
-│   │   ├── users.py              # 사용자 관리
-│   │   ├── posts.py              # 게시글 CRUD
-│   │   └── protected.py          # 보호된 엔드포인트
-│   ├── utils/                     # 유틸리티
-│   │   └── dependencies.py       # FastAPI 의존성
-│   ├── __main__.py                # Python 모듈 진입점
-│   ├── main.py                    # FastAPI 앱
-│   └── run.py                     # 서버 실행 스크립트
-├── tests/                         # 테스트
-│   ├── __init__.py
-│   ├── test_main.py              # 메인 API 테스트
-│   └── test_posts.py             # 게시글 API 테스트
-├── Dockerfile                     # Docker 이미지 빌드
-├── docker-compose.yml             # Docker Compose 설정
-├── .dockerignore                  # Docker 빌드 제외 파일
-├── pytest.ini                     # pytest 설정
-├── requirements.txt               # 의존성
-├── .env.example                   # 환경 변수 예시
-├── .gitignore                     # Git 제외 파일
-└── README.md
-```
+- 🔐 **OAuth 2.0 소셜 로그인** - Google, Apple, Naver, Kakao
+- 🎫 **JWT 인증** - Access Token (24h) + Refresh Token (7d)
+- 🛡️ **토큰 블랙리스트** - 로그아웃 시 토큰 무효화
+- 📝 **게시글 CRUD** - 인증 기반 게시글 관리
+- 🐳 **Docker 지원** - 컨테이너화된 배포
+- 🚀 **CI/CD** - GitHub Actions 자동화
 
-## 📋 사전 준비사항
+## 🚀 빠른 시작
 
-### Python 버전
-- Python 3.8 이상 필요
-
-### OAuth 앱 등록
-
-각 OAuth 제공자에서 애플리케이션을 등록하고 인증 정보를 발급받아야 합니다.
-
-#### Google OAuth
-1. [Google Cloud Console](https://console.cloud.google.com/) 접속
-2. 프로젝트 생성 또는 선택
-3. "API 및 서비스" → "사용자 인증 정보"
-4. "OAuth 2.0 클라이언트 ID" 생성
-5. 승인된 리디렉션 URI: `http://localhost:8000/auth/google/callback`
-
-#### Apple OAuth
-1. [Apple Developer](https://developer.apple.com/) 가입 (연 $99)
-2. Certificates, Identifiers & Profiles → Keys
-3. "Sign in with Apple" 활성화된 키 생성
-4. .p8 파일 다운로드 (한 번만 가능!)
-5. Service IDs 생성 및 Return URL 설정: `http://localhost:8000/auth/apple/callback`
-
-#### Naver OAuth
-1. [네이버 개발자센터](https://developers.naver.com/) 접속
-2. 애플리케이션 등록
-3. 서비스 URL 및 콜백 URL 설정: `http://localhost:8000/auth/naver/callback`
-
-#### Kakao OAuth
-1. [카카오 개발자센터](https://developers.kakao.com/) 접속
-2. 애플리케이션 추가
-3. 플랫폼 설정에서 Redirect URI 등록: `http://localhost:8000/auth/kakao/callback`
-
-## 🚀 설치 및 실행
-
-### 방법 A: Docker 사용 (권장)
-
-Docker를 사용하면 환경 설정 없이 바로 실행할 수 있습니다.
-
-#### 1. .env 파일 설정
+### Docker 사용 (권장)
 
 ```bash
-# .env 파일 생성
+# 환경 설정
 cp .env.example .env
+# .env 파일 편집하여 OAuth 키 입력
 
-# .env 파일 편집하여 실제 OAuth 값 입력
-```
-
-#### 2. Docker Compose로 실행
-
-```bash
-# 개발 모드로 실행 (코드 변경 시 자동 반영)
+# 실행
 docker-compose up
 
 # 백그라운드 실행
 docker-compose up -d
-
-# 로그 확인
-docker-compose logs -f
-
-# 중지
-docker-compose down
 ```
 
-#### 3. Docker만 사용 (Compose 없이)
+### 로컬 실행
 
 ```bash
-# 이미지 빌드
-docker build -t festapi .
-
-# 컨테이너 실행
-docker run -p 8000:8000 --env-file .env festapi
-```
-
-#### 프로덕션 모드 실행
-
-```bash
-# 4개의 워커로 실행
-docker-compose --profile production up api-prod
-```
-
-### 방법 B: 로컬 환경에서 실행
-
-#### 1. 가상환경 생성 및 활성화
-
-```bash
-# 가상환경 생성
+# 가상환경 생성 및 활성화
 python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 가상환경 활성화
-# macOS/Linux:
-source venv/bin/activate
-# Windows:
-venv\Scripts\activate
-```
-
-### 2. 의존성 설치
-
-```bash
-pip install --upgrade pip
+# 의존성 설치
 pip install -r requirements.txt
-```
 
-### 3. 환경 설정
-
-```bash
-# .env 파일 생성
+# 환경 설정
 cp .env.example .env
+# .env 파일 편집
 
-# .env 파일 편집하여 실제 OAuth 값 입력
-# (에디터로 .env 파일을 열어 수정)
+# 서버 실행
+python -m app
 ```
 
-`.env` 파일 예시:
+서버 실행 후: http://localhost:8000/docs
+
+## 📡 API 엔드포인트
+
+### 인증
+- `GET /auth/{provider}` - OAuth 로그인 (google, apple, naver, kakao)
+- `GET /auth/{provider}/callback` - OAuth 콜백
+- `POST /auth/refresh` - 토큰 갱신
+- `POST /auth/logout` - 로그아웃
+- `GET /auth/me` - 내 정보 조회
+- `PUT /auth/me` - 내 정보 수정
+
+### 게시글
+- `POST /posts/` - 게시글 작성 🔒
+- `GET /posts/` - 게시글 목록
+- `GET /posts/me` - 내 게시글 🔒
+- `GET /posts/{id}` - 게시글 조회
+- `PUT /posts/{id}` - 게시글 수정 🔒
+- `DELETE /posts/{id}` - 게시글 삭제 🔒
+
+🔒 = 인증 필요
+
+## 🔧 환경 변수
+
 ```env
-# JWT 설정
-JWT_SECRET_KEY=your-super-secret-jwt-key-change-this
+# JWT
+JWT_SECRET_KEY=your-secret-key
 JWT_ALGORITHM=HS256
 JWT_EXPIRATION_HOURS=24
 
 # Google OAuth
-GOOGLE_CLIENT_ID=your-google-client-id
-GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
 REDIRECT_URI_GOOGLE=http://localhost:8000/auth/google/callback
 
 # Apple OAuth (선택)
-APPLE_CLIENT_ID=com.yourcompany.yourapp.signin
+APPLE_CLIENT_ID=com.yourcompany.app
 APPLE_TEAM_ID=YOUR_TEAM_ID
 APPLE_KEY_ID=YOUR_KEY_ID
 APPLE_PRIVATE_KEY_PATH=./apple_private_key.p8
 REDIRECT_URI_APPLE=http://localhost:8000/auth/apple/callback
 
 # Naver OAuth (선택)
-NAVER_CLIENT_ID=your-naver-client-id
-NAVER_CLIENT_SECRET=your-naver-client-secret
+NAVER_CLIENT_ID=your-client-id
+NAVER_CLIENT_SECRET=your-client-secret
 REDIRECT_URI_NAVER=http://localhost:8000/auth/naver/callback
 
 # Kakao OAuth (선택)
-KAKAO_CLIENT_ID=your-kakao-client-id
-KAKAO_CLIENT_SECRET=your-kakao-client-secret
+KAKAO_CLIENT_ID=your-client-id
+KAKAO_CLIENT_SECRET=your-client-secret
 REDIRECT_URI_KAKAO=http://localhost:8000/auth/kakao/callback
 ```
 
-### 4. 서버 실행
+## 🧪 테스트
 
 ```bash
-# 방법 1: Python 모듈로 실행 (권장)
-python -m app
+# 테스트 실행
+pytest tests/ -v
 
-# 방법 2: uvicorn 직접 사용
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# 방법 3: run.py 직접 실행
-python app/run.py
-```
-
-서버가 시작되면 다음 주소에서 접속 가능합니다:
-- 홈페이지: http://localhost:8000
-- API 문서 (Swagger): http://localhost:8000/docs
-- API 문서 (ReDoc): http://localhost:8000/redoc
-
-## 📖 API 엔드포인트
-
-### 인증 (Authentication)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/auth/google` | Google OAuth 로그인 시작 |
-| GET | `/auth/google/callback` | Google OAuth 콜백 |
-| GET | `/auth/apple` | Apple OAuth 로그인 시작 |
-| POST | `/auth/apple/callback` | Apple OAuth 콜백 |
-| GET | `/auth/naver` | Naver OAuth 로그인 시작 |
-| GET | `/auth/naver/callback` | Naver OAuth 콜백 |
-| GET | `/auth/kakao` | Kakao OAuth 로그인 시작 |
-| GET | `/auth/kakao/callback` | Kakao OAuth 콜백 |
-| GET | `/auth/me` | 현재 사용자 정보 조회 |
-| PUT | `/auth/me` | 현재 사용자 정보 수정 |
-| POST | `/auth/logout` | 로그아웃 (토큰 블랙리스트 처리) |
-| POST | `/auth/refresh` | 리프레시 토큰으로 액세스 토큰 갱신 |
-| POST | `/auth/cleanup-blacklist` | 만료된 블랙리스트 토큰 정리 |
-
-### 사용자 (Users)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/users/` | 모든 사용자 조회 (인증 필요) |
-| GET | `/users/{email}` | 특정 사용자 조회 (인증 필요) |
-
-### 게시글 (Posts)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/posts/` | 게시글 작성 (인증 필요) |
-| GET | `/posts/` | 게시글 목록 조회 (최신순) |
-| GET | `/posts/me` | 내가 작성한 게시글 조회 (인증 필요) |
-| GET | `/posts/{post_id}` | 게시글 상세 조회 |
-| PUT | `/posts/{post_id}` | 게시글 수정 (작성자만, 인증 필요) |
-| DELETE | `/posts/{post_id}` | 게시글 삭제 (작성자만, 인증 필요) |
-
-### 보호된 엔드포인트 (Protected)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/protected/` | 보호된 엔드포인트 예제 |
-| GET | `/protected/admin` | 관리자 전용 엔드포인트 예제 |
-
-## 🧪 사용 예시
-
-### 1. OAuth 로그인
-
-브라우저에서 접속:
-```
-http://localhost:8000/auth/google
-http://localhost:8000/auth/kakao
-```
-
-로그인 성공 시 응답:
-```json
-{
-  "user": {
-    "id": "google_123456789",
-    "email": "user@example.com",
-    "name": "홍길동",
-    "picture": "https://...",
-    "verified_email": true,
-    "provider": "google",
-    "provider_id": "123456789"
-  },
-  "access_token": "eyJhbGc..."
-}
-```
-
-### 2. 인증된 API 호출
-
-```bash
-# 현재 사용자 정보 조회
-curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  http://localhost:8000/auth/me
-
-# 사용자 정보 수정
-curl -X PUT \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"새이름"}' \
-  http://localhost:8000/auth/me
-```
-
-### 3. 로그아웃
-
-```bash
-curl -X POST \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  http://localhost:8000/auth/logout
-```
-
-### 4. 토큰 갱신
-
-```bash
-# 리프레시 토큰으로 새로운 액세스 토큰 발급
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{"refresh_token":"YOUR_REFRESH_TOKEN"}' \
-  http://localhost:8000/auth/refresh
-```
-
-### 5. 게시글 CRUD
-
-```bash
-# 게시글 작성
-curl -X POST \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"제목","content":"내용"}' \
-  http://localhost:8000/posts/
-
-# 게시글 목록 조회
-curl http://localhost:8000/posts/
-
-# 내가 작성한 게시글 조회
-curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  http://localhost:8000/posts/me
-
-# 게시글 상세 조회
-curl http://localhost:8000/posts/{post_id}
-
-# 게시글 수정
-curl -X PUT \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"수정된 제목"}' \
-  http://localhost:8000/posts/{post_id}
-
-# 게시글 삭제
-curl -X DELETE \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  http://localhost:8000/posts/{post_id}
-```
-
-## 🔧 개발 정보
-
-### 기술 스택
-- **Framework**: FastAPI 0.104.1
-- **Authentication**: OAuth 2.0, JWT
-- **Python**: 3.8+
-- **Database**: In-Memory (개발용)
-- **Containerization**: Docker, Docker Compose
-
-### 주요 라이브러리
-- `fastapi`: 웹 프레임워크
-- `uvicorn`: ASGI 서버
-- `pydantic`: 데이터 검증
-- `PyJWT`: JWT 토큰 관리
-- `httpx`: 비동기 HTTP 클라이언트
-- `cryptography`: 암호화 (Apple OAuth)
-
-## 🛠️ 문제 해결
-
-### Docker 관련
-
-#### 컨테이너가 시작되지 않는 경우
-```bash
-# 컨테이너 로그 확인
-docker-compose logs api
-
-# 컨테이너 재시작
-docker-compose restart api
-
-# 이미지 다시 빌드
-docker-compose build --no-cache
-docker-compose up
-```
-
-#### 포트 충돌
-```bash
-# Docker Compose에서 다른 포트 사용
-# docker-compose.yml 수정: "8080:8000"
-docker-compose up
-
-# 또는 환경변수로 설정
-PORT=8080 docker-compose up
-```
-
-#### 환경변수가 적용되지 않는 경우
-```bash
-# .env 파일이 올바른 위치에 있는지 확인
-ls -la .env
-
-# 컨테이너 재시작
-docker-compose down
-docker-compose up
-```
-
-### 로컬 실행 관련
-
-#### 포트 충돌
-```bash
-# 다른 포트로 실행
-uvicorn app.main:app --reload --port 8080
-```
-
-### OAuth 콜백 오류
-1. OAuth 제공자 설정에서 리디렉션 URI 확인
-2. `.env` 파일의 CLIENT_ID, CLIENT_SECRET 확인
-3. 로컬호스트 포트 일치 여부 확인
-
-### 패키지 설치 오류
-```bash
-pip install --upgrade pip setuptools wheel
-pip cache purge
-pip install -r requirements.txt
+# 커버리지 포함
+pytest tests/ --cov=app
 ```
 
 ## 🚀 CI/CD
 
-이 프로젝트는 GitHub Actions를 사용하여 완전 자동화된 CI/CD 파이프라인을 구축했습니다.
+GitHub Actions로 자동화된 파이프라인:
 
-### CI (Continuous Integration)
+- **CI**: 테스트, 린팅, 보안 스캔 (Python 3.9, 3.10, 3.11)
+- **Docker**: 이미지 빌드 & GitHub Container Registry 푸시
+- **Deploy**: SSH/AWS/GCP 자동 배포
 
-#### 자동 테스트
-- **트리거**: main, develop 브랜치에 push 또는 PR 생성 시
-- **Python 버전**: 3.9, 3.10, 3.11 매트릭스 테스트
-- **실행 항목**:
-  - 코드 린팅 (flake8)
-  - 코드 포맷팅 체크 (black)
-  - 단위 테스트 및 통합 테스트 (pytest)
-  - 코드 커버리지 측정 (codecov)
+## 📁 프로젝트 구조
 
-#### 보안 스캔
-- **Bandit**: Python 코드 보안 취약점 스캔
-- **Safety**: 의존성 패키지 취약점 체크
-
-#### 코드 품질
-- **pylint**: 코드 품질 분석
-- **mypy**: 정적 타입 체크
-
-### Docker Build & Push
-
-#### 자동 이미지 빌드
-- **트리거**: main 브랜치에 push 또는 태그 생성 시
-- **레지스트리**: GitHub Container Registry (ghcr.io)
-- **플랫폼**: linux/amd64, linux/arm64 멀티 아키텍처 지원
-- **태그 전략**:
-  - `latest`: main 브랜치 최신 버전
-  - `v*`: 시맨틱 버전 태그 (예: v1.0.0)
-  - `{branch}-{sha}`: 브랜치별 커밋 해시
-
-#### 이미지 보안 스캔
-- **Trivy**: Docker 이미지 취약점 스캔
-- 스캔 결과를 GitHub Security에 자동 업로드
-
-### CD (Continuous Deployment)
-
-#### 배포 환경
-프로젝트는 여러 배포 옵션을 지원합니다:
-
-1. **SSH를 통한 서버 배포** (기본 활성화)
-   - Docker Compose 사용
-   - 자동 헬스 체크
-
-2. **AWS ECS 배포** (선택 사항)
-   - Amazon ECR에 이미지 푸시
-   - ECS 서비스 자동 업데이트
-
-3. **Google Cloud Run 배포** (선택 사항)
-   - GCR에 이미지 푸시
-   - Cloud Run 서비스 배포
-
-#### 필요한 GitHub Secrets
-
-서버 배포를 위한 시크릿:
 ```
-DEPLOY_HOST        # 배포 서버 호스트
-DEPLOY_USER        # SSH 사용자명
-DEPLOY_KEY         # SSH 개인키
-DEPLOY_PORT        # SSH 포트 (기본: 22)
-DEPLOY_PATH        # 서버의 프로젝트 경로
-DEPLOY_URL         # 헬스 체크 URL
+FestAPI/
+├── .github/workflows/     # CI/CD 파이프라인
+├── app/
+│   ├── core/             # 설정 및 DB
+│   ├── models/           # 데이터 모델
+│   ├── schemas/          # Pydantic 스키마
+│   ├── services/         # 비즈니스 로직
+│   │   └── auth/         # OAuth 서비스
+│   ├── routers/          # API 엔드포인트
+│   └── main.py           # FastAPI 앱
+├── tests/                # 테스트
+├── Dockerfile
+├── docker-compose.yml
+└── requirements.txt
 ```
 
-AWS 배포를 위한 시크릿 (선택):
-```
-AWS_ACCESS_KEY_ID
-AWS_SECRET_ACCESS_KEY
-AWS_REGION
-ECS_CLUSTER
-ECS_SERVICE
-```
+## 🔒 보안
 
-GCP 배포를 위한 시크릿 (선택):
-```
-GCP_SA_KEY         # Service Account JSON 키
-GCP_PROJECT_ID
-GCP_REGION
-```
+- JWT 기반 인증 (Access + Refresh Token)
+- 토큰 블랙리스트 (로그아웃 시 무효화)
+- OAuth 2.0 표준 준수
+- 환경 변수로 민감 정보 관리
+- 자동 보안 스캔 (Bandit, Safety, Trivy)
 
-### 워크플로우 실행
+## 📝 OAuth 앱 등록
 
-#### 자동 실행
-- 코드 푸시 시 자동으로 CI 실행
-- main 브랜치 푸시 시 Docker 이미지 빌드 및 배포
+### Google
+[Google Cloud Console](https://console.cloud.google.com/) → API 및 서비스 → OAuth 2.0 클라이언트 ID 생성
 
-#### 수동 실행
-```bash
-# GitHub Actions 페이지에서 "Deploy" 워크플로우를 수동으로 실행 가능
-# Environment: production 또는 staging 선택 가능
-```
+### Apple
+[Apple Developer](https://developer.apple.com/) → Keys → Sign in with Apple 활성화
 
-### 테스트 실행
+### Naver
+[네이버 개발자센터](https://developers.naver.com/) → 애플리케이션 등록
 
-로컬에서 테스트 실행:
-```bash
-# 의존성 설치
-pip install pytest pytest-cov pytest-asyncio httpx
+### Kakao
+[카카오 개발자센터](https://developers.kakao.com/) → 애플리케이션 추가
 
-# 테스트 실행
-pytest tests/ -v
-
-# 커버리지 포함 테스트
-pytest tests/ -v --cov=app --cov-report=html
-
-# 특정 테스트만 실행
-pytest tests/test_posts.py -v
-```
-
-## 🔒 보안 기능
-
-### 토큰 블랙리스트
-- **로그아웃 시 토큰 무효화**: 로그아웃 시 액세스 토큰이 블랙리스트에 추가되어 재사용 방지
-- **자동 검증**: 모든 API 요청 시 블랙리스트 확인
-- **자동 정리**: `/auth/cleanup-blacklist` 엔드포인트로 만료된 블랙리스트 항목 정리 (7일 이상 경과)
-
-### 토큰 관리
-- **액세스 토큰**: 24시간 유효, 짧은 만료 시간으로 보안 강화
-- **리프레시 토큰**: 7일 유효, 액세스 토큰 갱신에 사용
-- **토큰 타입 검증**: access/refresh 토큰 타입을 구분하여 검증
-
-## 📝 TODO
-
-- [ ] 실제 데이터베이스 연동 (PostgreSQL, MySQL 등)
-- [ ] Redis 기반 세션 및 블랙리스트 관리
-- [x] 리프레시 토큰 구현
-- [x] 토큰 블랙리스트 구현
-- [ ] 사용자 권한 관리 (Role-based Access Control)
-- [ ] API Rate Limiting
-- [ ] 로깅 시스템
-- [ ] 단위 테스트 및 통합 테스트
-
-## 📄 License
+## 📄 라이선스
 
 MIT License
 
