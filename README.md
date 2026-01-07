@@ -1,9 +1,5 @@
 # FestAPI - OAuth 인증 서버
 
-[![CI](https://github.com/yourorg/festapi/actions/workflows/ci.yml/badge.svg)](https://github.com/yourorg/festapi/actions/workflows/ci.yml)
-[![Docker](https://github.com/yourorg/festapi/actions/workflows/docker.yml/badge.svg)](https://github.com/yourorg/festapi/actions/workflows/docker.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 Google, Apple, Naver, Kakao OAuth 2.0 인증을 지원하는 FastAPI 기반 REST API 서버
 
 ## ✨ 주요 기능
