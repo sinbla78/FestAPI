@@ -1,0 +1,131 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Docker Build and Push"]
+    types:
+      - completed
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy-to-server:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to server via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_KEY }}
+        port: ${{ secrets.DEPLOY_PORT || 22 }}
+        script: |
+          cd ${{ secrets.DEPLOY_PATH }}
+          docker-compose pull
+          docker-compose up -d --remove-orphans
+          docker image prune -af
+
+    - name: Health check
+      run: |
+        sleep 10
+        curl -f ${{ secrets.DEPLOY_URL }}/health || exit 1
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        echo "Deployment finished with status: ${{ job.status }}"
+
+  deploy-to-aws:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    if: false  # AWS 배포를 사용할 경우 true로 변경
+    environment:
+      name: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, tag, and push image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: festapi
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+    - name: Deploy to ECS
+      run: |
+        aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER }} \
+          --service ${{ secrets.ECS_SERVICE }} \
+          --force-new-deployment
+
+  deploy-to-gcp:
+    name: Deploy to Google Cloud Run
+    runs-on: ubuntu-latest
+    if: false  # GCP 배포를 사용할 경우 true로 변경
+    environment:
+      name: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure Docker for GCR
+      run: |
+        gcloud auth configure-docker
+
+    - name: Build and push to GCR
+      env:
+        PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        IMAGE_NAME: festapi
+      run: |
+        docker build -t gcr.io/$PROJECT_ID/$IMAGE_NAME:${{ github.sha }} .
+        docker push gcr.io/$PROJECT_ID/$IMAGE_NAME:${{ github.sha }}
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy festapi \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/festapi:${{ github.sha }} \
+          --platform managed \
+          --region ${{ secrets.GCP_REGION }} \
+          --allow-unauthenticated

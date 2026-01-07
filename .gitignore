@@ -59,10 +59,18 @@ apple_private_key.p8
 # Testing
 .pytest_cache/
 .coverage
+coverage.xml
 htmlcov/
 .tox/
+*.cover
+.hypothesis/
+
+# CI/CD
+bandit-report.json
+trivy-results.sarif
 
 # Old files
 app/.old/
 *.bak
 *.backup
+*.old

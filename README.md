@@ -1,17 +1,29 @@
 # OAuth 인증 API 서버
 
+[![CI](https://github.com/yourorg/festapi/actions/workflows/ci.yml/badge.svg)](https://github.com/yourorg/festapi/actions/workflows/ci.yml)
+[![Docker](https://github.com/yourorg/festapi/actions/workflows/docker.yml/badge.svg)](https://github.com/yourorg/festapi/actions/workflows/docker.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com)
+
 Google, Apple, Naver, Kakao OAuth 2.0 인증을 지원하는 FastAPI 기반 REST API 서버입니다.
 
 ## 📁 프로젝트 구조
 
 ```
 FestAPI/
+├── .github/
+│   └── workflows/                 # GitHub Actions 워크플로우
+│       ├── ci.yml                # CI 파이프라인
+│       ├── docker.yml            # Docker 빌드 & 푸시
+│       └── deploy.yml            # 배포 자동화
 ├── app/
 │   ├── core/                      # 핵심 설정 및 인프라
 │   │   ├── config.py             # 환경 설정
 │   │   └── database.py           # 인메모리 데이터베이스
 │   ├── models/                    # 데이터 모델
-│   │   └── user.py               # User, OAuthProvider, UserResponse
+│   │   ├── user.py               # User, OAuthProvider, UserResponse
+│   │   └── post.py               # Post, PostCreate, PostUpdate
 │   ├── schemas/                   # Pydantic 스키마
 │   │   ├── auth.py               # OAuth UserInfo 스키마
 │   │   └── user.py               # 사용자 스키마
@@ -25,15 +37,21 @@ FestAPI/
 │   ├── routers/                   # API 라우터
 │   │   ├── auth.py               # 인증 엔드포인트
 │   │   ├── users.py              # 사용자 관리
+│   │   ├── posts.py              # 게시글 CRUD
 │   │   └── protected.py          # 보호된 엔드포인트
 │   ├── utils/                     # 유틸리티
 │   │   └── dependencies.py       # FastAPI 의존성
 │   ├── __main__.py                # Python 모듈 진입점
 │   ├── main.py                    # FastAPI 앱
 │   └── run.py                     # 서버 실행 스크립트
+├── tests/                         # 테스트
+│   ├── __init__.py
+│   ├── test_main.py              # 메인 API 테스트
+│   └── test_posts.py             # 게시글 API 테스트
 ├── Dockerfile                     # Docker 이미지 빌드
 ├── docker-compose.yml             # Docker Compose 설정
 ├── .dockerignore                  # Docker 빌드 제외 파일
+├── pytest.ini                     # pytest 설정
 ├── requirements.txt               # 의존성
 ├── .env.example                   # 환경 변수 예시
 ├── .gitignore                     # Git 제외 파일
@@ -410,6 +428,118 @@ uvicorn app.main:app --reload --port 8080
 pip install --upgrade pip setuptools wheel
 pip cache purge
 pip install -r requirements.txt
+```
+
+## 🚀 CI/CD
+
+이 프로젝트는 GitHub Actions를 사용하여 완전 자동화된 CI/CD 파이프라인을 구축했습니다.
+
+### CI (Continuous Integration)
+
+#### 자동 테스트
+- **트리거**: main, develop 브랜치에 push 또는 PR 생성 시
+- **Python 버전**: 3.9, 3.10, 3.11 매트릭스 테스트
+- **실행 항목**:
+  - 코드 린팅 (flake8)
+  - 코드 포맷팅 체크 (black)
+  - 단위 테스트 및 통합 테스트 (pytest)
+  - 코드 커버리지 측정 (codecov)
+
+#### 보안 스캔
+- **Bandit**: Python 코드 보안 취약점 스캔
+- **Safety**: 의존성 패키지 취약점 체크
+
+#### 코드 품질
+- **pylint**: 코드 품질 분석
+- **mypy**: 정적 타입 체크
+
+### Docker Build & Push
+
+#### 자동 이미지 빌드
+- **트리거**: main 브랜치에 push 또는 태그 생성 시
+- **레지스트리**: GitHub Container Registry (ghcr.io)
+- **플랫폼**: linux/amd64, linux/arm64 멀티 아키텍처 지원
+- **태그 전략**:
+  - `latest`: main 브랜치 최신 버전
+  - `v*`: 시맨틱 버전 태그 (예: v1.0.0)
+  - `{branch}-{sha}`: 브랜치별 커밋 해시
+
+#### 이미지 보안 스캔
+- **Trivy**: Docker 이미지 취약점 스캔
+- 스캔 결과를 GitHub Security에 자동 업로드
+
+### CD (Continuous Deployment)
+
+#### 배포 환경
+프로젝트는 여러 배포 옵션을 지원합니다:
+
+1. **SSH를 통한 서버 배포** (기본 활성화)
+   - Docker Compose 사용
+   - 자동 헬스 체크
+
+2. **AWS ECS 배포** (선택 사항)
+   - Amazon ECR에 이미지 푸시
+   - ECS 서비스 자동 업데이트
+
+3. **Google Cloud Run 배포** (선택 사항)
+   - GCR에 이미지 푸시
+   - Cloud Run 서비스 배포
+
+#### 필요한 GitHub Secrets
+
+서버 배포를 위한 시크릿:
+```
+DEPLOY_HOST        # 배포 서버 호스트
+DEPLOY_USER        # SSH 사용자명
+DEPLOY_KEY         # SSH 개인키
+DEPLOY_PORT        # SSH 포트 (기본: 22)
+DEPLOY_PATH        # 서버의 프로젝트 경로
+DEPLOY_URL         # 헬스 체크 URL
+```
+
+AWS 배포를 위한 시크릿 (선택):
+```
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+ECS_CLUSTER
+ECS_SERVICE
+```
+
+GCP 배포를 위한 시크릿 (선택):
+```
+GCP_SA_KEY         # Service Account JSON 키
+GCP_PROJECT_ID
+GCP_REGION
+```
+
+### 워크플로우 실행
+
+#### 자동 실행
+- 코드 푸시 시 자동으로 CI 실행
+- main 브랜치 푸시 시 Docker 이미지 빌드 및 배포
+
+#### 수동 실행
+```bash
+# GitHub Actions 페이지에서 "Deploy" 워크플로우를 수동으로 실행 가능
+# Environment: production 또는 staging 선택 가능
+```
+
+### 테스트 실행
+
+로컬에서 테스트 실행:
+```bash
+# 의존성 설치
+pip install pytest pytest-cov pytest-asyncio httpx
+
+# 테스트 실행
+pytest tests/ -v
+
+# 커버리지 포함 테스트
+pytest tests/ -v --cov=app --cov-report=html
+
+# 특정 테스트만 실행
+pytest tests/test_posts.py -v
 ```
 
 ## 🔒 보안 기능
