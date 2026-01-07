@@ -39,10 +39,28 @@ class User(BaseModel):
         }
 
 
+class TokenResponse(BaseModel):
+    """토큰 응답 (액세스 + 리프레시)"""
+    access_token: str = Field(..., description="JWT 액세스 토큰 (짧은 만료 시간)", example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    refresh_token: str = Field(..., description="JWT 리프레시 토큰 (긴 만료 시간)", example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    token_type: str = Field(default="bearer", description="토큰 타입")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzA0NTQwMDAwfQ...",
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwidHlwZSI6InJlZnJlc2giLCJleHAiOjE3MDQ2MjY0MDB9...",
+                "token_type": "bearer"
+            }
+        }
+
+
 class UserResponse(BaseModel):
-    """사용자 응답 (토큰 포함)"""
+    """사용자 응답 (사용자 정보 + 토큰)"""
     user: User = Field(..., description="사용자 정보")
     access_token: str = Field(..., description="JWT 액세스 토큰", example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    refresh_token: str = Field(..., description="JWT 리프레시 토큰", example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    token_type: str = Field(default="bearer", description="토큰 타입")
 
     class Config:
         json_schema_extra = {
@@ -58,6 +76,8 @@ class UserResponse(BaseModel):
                     "created_at": "2024-01-06T12:00:00Z",
                     "updated_at": "2024-01-06T12:00:00Z"
                 },
-                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzA0NTQwMDAwfQ..."
+                "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwiZXhwIjoxNzA0NTQwMDAwfQ...",
+                "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyQGV4YW1wbGUuY29tIiwidHlwZSI6InJlZnJlc2giLCJleHAiOjE3MDQ2MjY0MDB9...",
+                "token_type": "bearer"
             }
         }
