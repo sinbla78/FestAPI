@@ -217,7 +217,9 @@ python app/run.py
 | GET | `/auth/kakao/callback` | Kakao OAuth 콜백 |
 | GET | `/auth/me` | 현재 사용자 정보 조회 |
 | PUT | `/auth/me` | 현재 사용자 정보 수정 |
-| POST | `/auth/logout` | 로그아웃 |
+| POST | `/auth/logout` | 로그아웃 (토큰 블랙리스트 처리) |
+| POST | `/auth/refresh` | 리프레시 토큰으로 액세스 토큰 갱신 |
+| POST | `/auth/cleanup-blacklist` | 만료된 블랙리스트 토큰 정리 |
 
 ### 사용자 (Users)
 
@@ -280,6 +282,16 @@ curl -X PUT \
 curl -X POST \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   http://localhost:8000/auth/logout
+```
+
+### 4. 토큰 갱신
+
+```bash
+# 리프레시 토큰으로 새로운 액세스 토큰 발급
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"refresh_token":"YOUR_REFRESH_TOKEN"}' \
+  http://localhost:8000/auth/refresh
 ```
 
 ## 🔧 개발 정보
@@ -356,11 +368,24 @@ pip cache purge
 pip install -r requirements.txt
 ```
 
+## 🔒 보안 기능
+
+### 토큰 블랙리스트
+- **로그아웃 시 토큰 무효화**: 로그아웃 시 액세스 토큰이 블랙리스트에 추가되어 재사용 방지
+- **자동 검증**: 모든 API 요청 시 블랙리스트 확인
+- **자동 정리**: `/auth/cleanup-blacklist` 엔드포인트로 만료된 블랙리스트 항목 정리 (7일 이상 경과)
+
+### 토큰 관리
+- **액세스 토큰**: 24시간 유효, 짧은 만료 시간으로 보안 강화
+- **리프레시 토큰**: 7일 유효, 액세스 토큰 갱신에 사용
+- **토큰 타입 검증**: access/refresh 토큰 타입을 구분하여 검증
+
 ## 📝 TODO
 
 - [ ] 실제 데이터베이스 연동 (PostgreSQL, MySQL 등)
-- [ ] Redis 기반 세션 관리
-- [ ] 리프레시 토큰 구현
+- [ ] Redis 기반 세션 및 블랙리스트 관리
+- [x] 리프레시 토큰 구현
+- [x] 토큰 블랙리스트 구현
 - [ ] 사용자 권한 관리 (Role-based Access Control)
 - [ ] API Rate Limiting
 - [ ] 로깅 시스템

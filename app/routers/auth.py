@@ -310,6 +310,8 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """로그아웃"""
     token = credentials.credentials
     db.remove_session(token)
+    # 토큰을 블랙리스트에 추가하여 재사용 방지
+    db.add_to_blacklist(token)
     return {"message": "성공적으로 로그아웃되었습니다."}
 
 
@@ -353,4 +355,36 @@ async def refresh_access_token(request: RefreshTokenRequest) -> TokenResponse:
     tokens = AuthService.create_tokens(email)
     db.add_session(tokens["access_token"], email)
     return TokenResponse(**tokens)
+
+
+@router.post(
+    "/cleanup-blacklist",
+    summary="만료된 블랙리스트 토큰 정리",
+    description="""
+    만료된 블랙리스트 토큰을 정리합니다.
+
+    리프레시 토큰의 만료 기간(7일)이 지난 블랙리스트 항목을 삭제합니다.
+    이 엔드포인트는 주기적으로 호출하여 메모리를 관리하는 용도로 사용됩니다.
+    """,
+    responses={
+        200: {
+            "description": "정리 완료",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "만료된 블랙리스트 토큰이 정리되었습니다.",
+                        "cleaned_count": 42
+                    }
+                }
+            }
+        }
+    }
+)
+async def cleanup_blacklist():
+    """만료된 블랙리스트 토큰 정리"""
+    cleaned_count = db.cleanup_expired_blacklist()
+    return {
+        "message": "만료된 블랙리스트 토큰이 정리되었습니다.",
+        "cleaned_count": cleaned_count
+    }
 

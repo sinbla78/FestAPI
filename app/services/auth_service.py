@@ -50,9 +50,19 @@ class AuthService:
     @staticmethod
     def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security), token_type: str = "access") -> str:
         """JWT 토큰 검증"""
+        token = credentials.credentials
+
+        # 블랙리스트 확인
+        if db.is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         try:
             payload = jwt.decode(
-                credentials.credentials,
+                token,
                 settings.jwt_secret_key,
                 algorithms=[settings.jwt_algorithm]
             )
@@ -91,6 +101,13 @@ class AuthService:
     @staticmethod
     def verify_refresh_token(token: str) -> str:
         """리프레시 토큰 검증"""
+        # 블랙리스트 확인
+        if db.is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+            )
+
         try:
             payload = jwt.decode(
                 token,
