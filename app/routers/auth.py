@@ -5,9 +5,10 @@ from typing import Optional
 
 from app.services import AuthService, GoogleAuthService, AppleAuthService, NaverAuthService, KakaoAuthService
 from app.services.auth_service import security
-from app.models import User, OAuthProvider, UserResponse
+from app.models import User, OAuthProvider, UserResponse, TokenResponse
 from app.schemas import UserUpdate
 from app.core.database import db
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/auth", tags=["인증"])
 
@@ -78,11 +79,17 @@ async def google_callback(code: str) -> UserResponse:
             "provider_id": google_user.id
         }
         user = db.create_user(user_data)
-    
-    access_token = AuthService.create_access_token(data={"sub": user.email})
-    db.add_session(access_token, user.email)
-    
-    return UserResponse(user=user, access_token=access_token)
+
+    # 액세스 토큰 + 리프레시 토큰 생성
+    tokens = AuthService.create_tokens(user.email)
+    db.add_session(tokens["access_token"], user.email)
+
+    return UserResponse(
+        user=user,
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+        token_type=tokens["token_type"]
+    )
 
 # Apple OAuth
 @router.get("/apple")
@@ -133,10 +140,10 @@ async def apple_callback(
             }
             existing_user = db.create_user(user_data)
         
-        access_token = AuthService.create_access_token(data={"sub": existing_user.email})
-        db.add_session(access_token, existing_user.email)
+        tokens = AuthService.create_tokens(existing_user.email)
+        db.add_session(tokens["access_token"], existing_user.email)
         
-        return UserResponse(user=existing_user, access_token=access_token)
+        return UserResponse(user=existing_user, access_token=tokens["access_token"], refresh_token=tokens["refresh_token"], token_type=tokens["token_type"])
         
     except Exception as e:
         raise HTTPException(
@@ -171,10 +178,10 @@ async def naver_callback(code: str, state: str) -> UserResponse:
             }
             user = db.create_user(user_data)
         
-        access_token = AuthService.create_access_token(data={"sub": user.email})
-        db.add_session(access_token, user.email)
+        tokens = AuthService.create_tokens(user.email)
+        db.add_session(tokens["access_token"], user.email)
         
-        return UserResponse(user=user, access_token=access_token)
+        return UserResponse(user=user, access_token=tokens["access_token"], refresh_token=tokens["refresh_token"], token_type=tokens["token_type"])
         
     except Exception as e:
         raise HTTPException(
@@ -213,10 +220,10 @@ async def kakao_callback(code: str) -> UserResponse:
             }
             user = db.create_user(user_data)
         
-        access_token = AuthService.create_access_token(data={"sub": user.email})
-        db.add_session(access_token, user.email)
+        tokens = AuthService.create_tokens(user.email)
+        db.add_session(tokens["access_token"], user.email)
         
-        return UserResponse(user=user, access_token=access_token)
+        return UserResponse(user=user, access_token=tokens["access_token"], refresh_token=tokens["refresh_token"], token_type=tokens["token_type"])
         
     except Exception as e:
         raise HTTPException(
@@ -303,4 +310,81 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """로그아웃"""
     token = credentials.credentials
     db.remove_session(token)
+    # 토큰을 블랙리스트에 추가하여 재사용 방지
+    db.add_to_blacklist(token)
     return {"message": "성공적으로 로그아웃되었습니다."}
+
+
+# 리프레시 토큰 요청 스키마
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str = Field(..., description="리프레시 토큰", example="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="액세스 토큰 갱신",
+    description="""
+    리프레시 토큰을 사용하여 새로운 액세스 토큰을 발급받습니다.
+
+    **사용 시나리오**:
+    1. 액세스 토큰이 만료되었을 때
+    2. 리프레시 토큰을 요청 본문에 포함하여 POST
+    3. 새로운 액세스 토큰과 리프레시 토큰을 받음
+
+    **토큰 만료 시간**:
+    - 액세스 토큰: 24시간
+    - 리프레시 토큰: 7일
+    """,
+    responses={
+        200: {
+            "description": "토큰 갱신 성공",
+        },
+        401: {"description": "리프레시 토큰이 유효하지 않거나 만료됨"}
+    }
+)
+async def refresh_access_token(request: RefreshTokenRequest) -> TokenResponse:
+    """리프레시 토큰으로 액세스 토큰 갱신"""
+    email = AuthService.verify_refresh_token(request.refresh_token)
+    user = db.get_user_by_email(email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    tokens = AuthService.create_tokens(email)
+    db.add_session(tokens["access_token"], email)
+    return TokenResponse(**tokens)
+
+
+@router.post(
+    "/cleanup-blacklist",
+    summary="만료된 블랙리스트 토큰 정리",
+    description="""
+    만료된 블랙리스트 토큰을 정리합니다.
+
+    리프레시 토큰의 만료 기간(7일)이 지난 블랙리스트 항목을 삭제합니다.
+    이 엔드포인트는 주기적으로 호출하여 메모리를 관리하는 용도로 사용됩니다.
+    """,
+    responses={
+        200: {
+            "description": "정리 완료",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "만료된 블랙리스트 토큰이 정리되었습니다.",
+                        "cleaned_count": 42
+                    }
+                }
+            }
+        }
+    }
+)
+async def cleanup_blacklist():
+    """만료된 블랙리스트 토큰 정리"""
+    cleaned_count = db.cleanup_expired_blacklist()
+    return {
+        "message": "만료된 블랙리스트 토큰이 정리되었습니다.",
+        "cleaned_count": cleaned_count
+    }
+

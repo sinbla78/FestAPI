@@ -1,6 +1,6 @@
 import jwt
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -23,32 +23,116 @@ class AuthService:
         else:
             expire = datetime.utcnow() + timedelta(hours=settings.jwt_expiration_hours)
 
-        to_encode.update({"exp": expire})
+        to_encode.update({"exp": expire, "type": "access"})
         encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
         return encoded_jwt
 
     @staticmethod
-    def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    def create_refresh_token(data: dict) -> str:
+        """JWT 리프레시 토큰 생성 (7일 만료)"""
+        to_encode = data.copy()
+        expire = datetime.utcnow() + timedelta(days=7)
+        to_encode.update({"exp": expire, "type": "refresh"})
+        encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+        return encoded_jwt
+
+    @staticmethod
+    def create_tokens(email: str) -> Dict[str, str]:
+        """액세스 토큰과 리프레시 토큰을 함께 생성"""
+        access_token = AuthService.create_access_token(data={"sub": email})
+        refresh_token = AuthService.create_refresh_token(data={"sub": email})
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        }
+
+    @staticmethod
+    def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security), token_type: str = "access") -> str:
         """JWT 토큰 검증"""
+        token = credentials.credentials
+
+        # 블랙리스트 확인
+        if db.is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         try:
             payload = jwt.decode(
-                credentials.credentials,
+                token,
                 settings.jwt_secret_key,
                 algorithms=[settings.jwt_algorithm]
             )
             email: str = payload.get("sub")
+            typ: str = payload.get("type")
+
             if email is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid authentication credentials",
                     headers={"WWW-Authenticate": "Bearer"},
                 )
+
+            # 토큰 타입 검증
+            if typ != token_type:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=f"Invalid token type. Expected {token_type}, got {typ}",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
             return email
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         except jwt.PyJWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
                 headers={"WWW-Authenticate": "Bearer"},
+            )
+
+    @staticmethod
+    def verify_refresh_token(token: str) -> str:
+        """리프레시 토큰 검증"""
+        # 블랙리스트 확인
+        if db.is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+            )
+
+        try:
+            payload = jwt.decode(
+                token,
+                settings.jwt_secret_key,
+                algorithms=[settings.jwt_algorithm]
+            )
+            email: str = payload.get("sub")
+            typ: str = payload.get("type")
+
+            if email is None or typ != "refresh":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid refresh token",
+                )
+
+            return email
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has expired",
+            )
+        except jwt.PyJWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
             )
 
     @staticmethod
