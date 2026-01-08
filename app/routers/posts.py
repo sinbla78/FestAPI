@@ -20,8 +20,56 @@ router = APIRouter(prefix="/posts", tags=["게시글"])
     **인증 필요**: Bearer 토큰을 헤더에 포함해야 합니다.
     """,
     responses={
-        201: {"description": "게시글 작성 성공"},
-        401: {"description": "인증 실패"}
+        201: {
+            "description": "게시글 작성 성공",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "id": "post_abc123def456",
+                        "title": "새로운 게시글",
+                        "content": "게시글 내용입니다.",
+                        "author_email": "user@example.com",
+                        "created_at": "2024-01-08T12:00:00Z",
+                        "updated_at": "2024-01-08T12:00:00Z"
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "인증 실패",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": {
+                            "code": "UNAUTHORIZED",
+                            "message": "인증에 실패했습니다.",
+                            "path": "/posts/"
+                        }
+                    }
+                }
+            }
+        },
+        422: {
+            "description": "입력 데이터 검증 실패",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": {
+                            "code": "VALIDATION_ERROR",
+                            "message": "입력 데이터 검증에 실패했습니다.",
+                            "details": [
+                                {
+                                    "field": "body.title",
+                                    "message": "Field required",
+                                    "type": "missing"
+                                }
+                            ],
+                            "path": "/posts/"
+                        }
+                    }
+                }
+            }
+        }
     }
 )
 async def create_post(
