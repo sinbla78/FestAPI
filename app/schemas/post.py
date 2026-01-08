@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Post(BaseModel):
@@ -26,8 +26,28 @@ class Post(BaseModel):
 
 class PostCreate(BaseModel):
     """게시글 생성 요청"""
-    title: str = Field(..., min_length=1, max_length=200, description="게시글 제목")
-    content: str = Field(..., min_length=1, description="게시글 내용")
+    title: str = Field(
+        ...,
+        min_length=1,
+        max_length=200,
+        description="게시글 제목",
+        examples=["새 게시글"]
+    )
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="게시글 내용",
+        examples=["게시글 내용입니다."]
+    )
+
+    @field_validator("title", "content")
+    @classmethod
+    def validate_not_empty(cls, v: str) -> str:
+        """공백만 있는 문자열 방지"""
+        if not v or not v.strip():
+            raise ValueError("공백만 입력할 수 없습니다.")
+        return v.strip()
 
     class Config:
         json_schema_extra = {
@@ -40,8 +60,30 @@ class PostCreate(BaseModel):
 
 class PostUpdate(BaseModel):
     """게시글 수정 요청"""
-    title: Optional[str] = Field(None, min_length=1, max_length=200, description="게시글 제목")
-    content: Optional[str] = Field(None, min_length=1, description="게시글 내용")
+    title: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=200,
+        description="게시글 제목",
+        examples=["수정된 제목"]
+    )
+    content: Optional[str] = Field(
+        None,
+        min_length=1,
+        max_length=10000,
+        description="게시글 내용",
+        examples=["수정된 내용"]
+    )
+
+    @field_validator("title", "content")
+    @classmethod
+    def validate_not_empty(cls, v: Optional[str]) -> Optional[str]:
+        """공백만 있는 문자열 방지"""
+        if v is not None:
+            if not v.strip():
+                raise ValueError("공백만 입력할 수 없습니다.")
+            return v.strip()
+        return v
 
     class Config:
         json_schema_extra = {
