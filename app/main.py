@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from app.routers import auth, users, protected, posts
+from app.core.logging import logger
 
 # API 메타데이터
 tags_metadata = [
@@ -82,9 +83,23 @@ app.include_router(posts.router)
 app.include_router(protected.router)
 
 
+@app.on_event("startup")
+async def startup_event():
+    """애플리케이션 시작 시 실행"""
+    logger.info("FastAPI 애플리케이션이 시작되었습니다.")
+    logger.info("OAuth 인증 서버 v1.0.0")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """애플리케이션 종료 시 실행"""
+    logger.info("FastAPI 애플리케이션이 종료되었습니다.")
+
+
 @app.get("/")
 async def root():
     """루트 엔드포인트"""
+    logger.info("루트 엔드포인트 호출")
     return {
         "message": "OAuth 인증 API 서버",
         "version": "1.0.0",
