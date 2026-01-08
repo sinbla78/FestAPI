@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from app.routers import auth, users, protected, posts
 from app.core.logging import logger
+from app.core.config import settings
 
 # API 메타데이터
 tags_metadata = [
@@ -70,7 +71,7 @@ app = FastAPI(
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 프로덕션에서는 특정 도메인으로 제한
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,7 +88,8 @@ app.include_router(protected.router)
 async def startup_event():
     """애플리케이션 시작 시 실행"""
     logger.info("FastAPI 애플리케이션이 시작되었습니다.")
-    logger.info("OAuth 인증 서버 v1.0.0")
+    logger.info(f"OAuth 인증 서버 v1.0.0 - 환경: {settings.environment}")
+    logger.info(f"Debug 모드: {settings.debug}")
 
 
 @app.on_event("shutdown")

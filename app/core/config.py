@@ -1,13 +1,22 @@
 from pydantic_settings import BaseSettings
+from typing import Literal
+import os
 
 
 class Settings(BaseSettings):
     """애플리케이션 설정"""
 
+    # 환경 설정
+    environment: Literal["development", "production", "test"] = "development"
+    debug: bool = True
+
     # JWT 설정
     jwt_secret_key: str = "your-secret-key-here"
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
+
+    # CORS 설정
+    cors_origins: list[str] = ["*"]
 
     # Google OAuth
     google_client_id: str
@@ -48,5 +57,25 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = False
 
+    @property
+    def is_development(self) -> bool:
+        """개발 환경 여부"""
+        return self.environment == "development"
 
-settings = Settings()
+    @property
+    def is_production(self) -> bool:
+        """프로덕션 환경 여부"""
+        return self.environment == "production"
+
+    @property
+    def is_test(self) -> bool:
+        """테스트 환경 여부"""
+        return self.environment == "test"
+
+
+def get_settings() -> Settings:
+    """환경 설정 인스턴스 반환"""
+    return Settings()
+
+
+settings = get_settings()
