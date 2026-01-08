@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from fastapi.exceptions import RequestValidationError
 from app.routers import auth, users, protected, posts
@@ -123,8 +124,70 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """헬스 체크 엔드포인트"""
-    return {"status": "healthy"}
+    """
+    헬스 체크 엔드포인트
+
+    서버의 상태를 확인합니다. 로드 밸런서 및 모니터링 시스템에서 사용됩니다.
+    """
+    from datetime import datetime
+    from app.core.database import db
+
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "environment": settings.environment,
+        "version": "1.0.0",
+        "checks": {
+            "database": {
+                "status": "healthy",
+                "users_count": len(db.users),
+                "posts_count": len(db.posts),
+                "active_sessions": db.get_active_sessions_count(),
+            }
+        }
+    }
+
+
+@app.get("/health/liveness")
+async def liveness():
+    """
+    Liveness 프로브
+
+    애플리케이션이 살아있는지 확인합니다.
+    Kubernetes liveness probe로 사용됩니다.
+    """
+    return {"status": "alive"}
+
+
+@app.get("/health/readiness")
+async def readiness():
+    """
+    Readiness 프로브
+
+    애플리케이션이 요청을 받을 준비가 되었는지 확인합니다.
+    Kubernetes readiness probe로 사용됩니다.
+    """
+    from app.core.database import db
+
+    # 기본적인 준비 상태 체크
+    try:
+        # DB 연결 확인 (인메모리이므로 항상 성공)
+        _ = len(db.users)
+        return {
+            "status": "ready",
+            "checks": {
+                "database": "ok"
+            }
+        }
+    except Exception as e:
+        logger.error(f"Readiness check failed: {str(e)}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "error": str(e)
+            }
+        )
 
 
 @app.get("/test")
