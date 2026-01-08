@@ -1,9 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from fastapi.exceptions import RequestValidationError
 from app.routers import auth, users, protected, posts
 from app.core.logging import logger
 from app.core.config import settings
+from app.core.exceptions import (
+    APIException,
+    api_exception_handler,
+    validation_exception_handler,
+    general_exception_handler,
+)
 
 # API 메타데이터
 tags_metadata = [
@@ -67,6 +74,11 @@ app = FastAPI(
         "url": "https://opensource.org/licenses/MIT",
     },
 )
+
+# 예외 핸들러 등록
+app.add_exception_handler(APIException, api_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
 
 # CORS 설정
 app.add_middleware(
