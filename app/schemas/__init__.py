@@ -5,6 +5,7 @@ from app.schemas.auth import (
     KakaoUserInfo
 )
 from app.schemas.user import UserUpdate
+from app.schemas.post import Post, PostCreate, PostUpdate
 
 __all__ = [
     "GoogleUserInfo",
@@ -12,4 +13,7 @@ __all__ = [
     "NaverUserInfo",
     "KakaoUserInfo",
     "UserUpdate",
+    "Post",
+    "PostCreate",
+    "PostUpdate",
 ]

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 
-from app.models import Post, PostCreate, PostUpdate, User
+from app.models import User
+from app.schemas import Post, PostCreate, PostUpdate
 from app.services import AuthService
 from app.core.database import db
 
