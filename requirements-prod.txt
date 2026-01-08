@@ -1,7 +1,4 @@
-# Core dependencies
-# For development: pip install -r requirements-dev.txt
-# For production: pip install -r requirements-prod.txt
-
+# Production dependencies only
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-multipart==0.0.6

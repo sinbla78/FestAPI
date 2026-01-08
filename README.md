@@ -35,7 +35,11 @@ python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 의존성 설치
-pip install -r requirements.txt
+# 개발 환경
+pip install -r requirements-dev.txt
+
+# 또는 프로덕션 환경
+pip install -r requirements-prod.txt
 
 # 환경 설정
 cp .env.example .env
