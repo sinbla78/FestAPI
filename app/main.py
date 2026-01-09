@@ -12,6 +12,7 @@ from app.core.exceptions import (
     validation_exception_handler,
     general_exception_handler,
 )
+from app.middleware import RateLimitMiddleware
 
 # API 메타데이터
 tags_metadata = [
@@ -80,6 +81,13 @@ app = FastAPI(
 app.add_exception_handler(APIException, api_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
+
+# Rate Limiting 미들웨어
+app.add_middleware(
+    RateLimitMiddleware,
+    requests_per_minute=60,
+    requests_per_hour=1000
+)
 
 # CORS 설정
 app.add_middleware(
