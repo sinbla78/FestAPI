@@ -221,6 +221,57 @@ async def readiness():
         )
 
 
+@app.get("/metrics")
+async def metrics():
+    """
+    메트릭 엔드포인트
+
+    시스템 메트릭과 애플리케이션 통계를 반환합니다.
+    Prometheus, Grafana 등 모니터링 시스템과 연동 가능합니다.
+    """
+    from app.core.database import db
+    from datetime import datetime
+    import psutil
+    import os
+
+    # 프로세스 정보
+    process = psutil.Process(os.getpid())
+
+    # 메모리 사용량
+    memory_info = process.memory_info()
+
+    # CPU 사용량
+    cpu_percent = process.cpu_percent(interval=0.1)
+
+    # 데이터베이스 통계
+    db_stats = {
+        "users_count": len(db.users),
+        "posts_count": len(db.posts),
+        "active_sessions": db.get_active_sessions_count(),
+        "blacklisted_tokens": len(db.token_blacklist)
+    }
+
+    return {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "service": {
+            "name": "FestAPI",
+            "version": "1.0.0",
+            "environment": settings.environment
+        },
+        "system": {
+            "cpu_percent": cpu_percent,
+            "memory": {
+                "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
+                "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
+                "percent": round(process.memory_percent(), 2)
+            },
+            "threads": process.num_threads(),
+            "connections": len(process.connections())
+        },
+        "database": db_stats
+    }
+
+
 @app.get("/test")
 async def test():
     """테스트용 엔드포인트"""
