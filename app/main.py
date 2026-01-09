@@ -12,7 +12,7 @@ from app.core.exceptions import (
     validation_exception_handler,
     general_exception_handler,
 )
-from app.middleware import RateLimitMiddleware
+from app.middleware import RateLimitMiddleware, RequestIDMiddleware
 
 # API 메타데이터
 tags_metadata = [
@@ -81,6 +81,9 @@ app = FastAPI(
 app.add_exception_handler(APIException, api_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
+
+# Request ID 트래킹 미들웨어 (가장 먼저 실행되어야 함)
+app.add_middleware(RequestIDMiddleware)
 
 # Rate Limiting 미들웨어
 app.add_middleware(
