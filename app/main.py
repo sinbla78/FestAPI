@@ -121,12 +121,29 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    """루트 엔드포인트"""
+    """
+    루트 엔드포인트
+
+    API 서버의 기본 정보와 지원하는 버전을 반환합니다.
+    """
+    from app.core.versioning import CURRENT_VERSION, VERSION_INFO, SUPPORTED_VERSIONS
+
     logger.info("루트 엔드포인트 호출")
     return {
         "message": "OAuth 인증 API 서버",
         "version": "1.0.0",
-        "status": "running"
+        "status": "running",
+        "api": {
+            "current_version": CURRENT_VERSION,
+            "supported_versions": [v.value for v in SUPPORTED_VERSIONS],
+            "version_info": VERSION_INFO[CURRENT_VERSION]
+        },
+        "endpoints": {
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "openapi": "/openapi.json",
+            "health": "/health"
+        }
     }
 
 
