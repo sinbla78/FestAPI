@@ -12,7 +12,7 @@ from app.core.exceptions import (
     validation_exception_handler,
     general_exception_handler,
 )
-from app.middleware import RateLimitMiddleware, RequestIDMiddleware
+from app.middleware import RateLimitMiddleware, RequestIDMiddleware, SecurityHeadersMiddleware
 
 # API 메타데이터
 tags_metadata = [
@@ -84,6 +84,9 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 # Request ID 트래킹 미들웨어 (가장 먼저 실행되어야 함)
 app.add_middleware(RequestIDMiddleware)
+
+# 보안 헤더 미들웨어
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Rate Limiting 미들웨어
 app.add_middleware(
