@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # CORS 설정
     cors_origins: list[str] = ["*"]
 
+    # 데이터베이스 설정
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/festapi"
+
     # Google OAuth
     google_client_id: str
     google_client_secret: str
