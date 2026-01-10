@@ -74,3 +74,4 @@ app/.old/
 *.bak
 *.backup
 *.old
+venv/
