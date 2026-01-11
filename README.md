@@ -323,9 +323,16 @@ pip install asyncpg psycopg2-binary
   "python.linting.enabled": true,
   "python.linting.flake8Enabled": true,
   "python.formatting.provider": "black",
-  "editor.formatOnSave": true
+  "editor.formatOnSave": true,
+  "sonarlint.rules": {
+    "python:S1192": {
+      "level": "off"
+    }
+  }
 }
 ```
+
+**참고**: SonarLint의 S1192 규칙(문자열 중복)은 이미 상수화된 코드에서도 경고를 표시할 수 있습니다. 위 설정으로 비활성화할 수 있습니다.
 
 3. **권장 확장 프로그램**
    - Python (Microsoft)
