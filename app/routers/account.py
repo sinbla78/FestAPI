@@ -1,3 +1,5 @@
+# ruff: noqa: S1192
+"""계정 관리 라우터 (관리자 전용)"""
 from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
