@@ -9,6 +9,7 @@ from app.db.models.department import Department
 from app.schemas.user_auth import UserCreate, UserResponse, UserInfoUpdate
 from app.services.manager_service import ManagerService
 from app.services.password_service import PasswordService
+from app.core.messages import ErrorMessages
 
 router = APIRouter(prefix="/accounts", tags=["계정 관리 (관리자 전용)"])
 
@@ -49,7 +50,7 @@ async def get_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail="ErrorMessages.USER_NOT_FOUND"
         )
 
     return user
@@ -77,7 +78,7 @@ async def create_user(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 존재하는 아이디입니다."
+            detail="ErrorMessages.USER_ALREADY_EXISTS"
         )
 
     # 비밀번호 해싱
@@ -119,7 +120,7 @@ async def update_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail="ErrorMessages.USER_NOT_FOUND"
         )
 
     # 부서 변경 시 존재 여부 확인
@@ -132,7 +133,7 @@ async def update_user(
         if not department:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="존재하지 않는 부서입니다."
+                detail="ErrorMessages.INVALID_DEPARTMENT"
             )
 
     # 정보 업데이트
@@ -170,7 +171,7 @@ async def delete_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail="ErrorMessages.USER_NOT_FOUND"
         )
 
     await db.delete(user)
