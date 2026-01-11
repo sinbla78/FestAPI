@@ -307,6 +307,35 @@ sudo apt-get install postgresql-dev python3-dev
 pip install asyncpg psycopg2-binary
 ```
 
+## 🛠️ 개발 환경 설정
+
+### VS Code 사용자
+
+1. **Python 인터프리터 선택**
+   - `Cmd/Ctrl + Shift + P` → "Python: Select Interpreter"
+   - `./venv/bin/python` 선택
+
+2. **권장 설정** (`.vscode/settings.json` 생성)
+```json
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/venv/bin/python",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.formatting.provider": "black",
+  "editor.formatOnSave": true
+}
+```
+
+3. **권장 확장 프로그램**
+   - Python (Microsoft)
+   - Pylance (Microsoft)
+   - Black Formatter (Microsoft)
+
+### 타입 체킹
+
+프로젝트에 `pyrightconfig.json`이 포함되어 있어 SQLAlchemy 관련 타입 체킹 오류가 자동으로 무시됩니다.
+
 ## 📝 개발 가이드
 
 ### 새로운 모델 추가
