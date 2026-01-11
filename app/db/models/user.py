@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, ForeignKey, DateTime
+from sqlalchemy import Column, BigInteger, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -13,7 +13,10 @@ class User(Base):
     username = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
     email = Column(String(255), nullable=True)
+    manager_name = Column(String(255), nullable=True)  # 담당자 이름
+    manager_number = Column(String(20), nullable=True)  # 담당자 연락처
     department_id = Column(BigInteger, ForeignKey("departments.department_id", ondelete="SET NULL"), nullable=True, index=True)
+    is_first_login = Column(Boolean, nullable=False, default=True)  # 첫 로그인 여부
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
