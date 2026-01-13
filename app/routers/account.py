@@ -52,7 +52,7 @@ async def get_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="ErrorMessages.USER_NOT_FOUND"
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     return user
@@ -80,7 +80,7 @@ async def create_user(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ErrorMessages.USER_ALREADY_EXISTS"
+            detail=ErrorMessages.USER_ALREADY_EXISTS
         )
 
     # 비밀번호 해싱
@@ -122,7 +122,7 @@ async def update_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="ErrorMessages.USER_NOT_FOUND"
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     # 부서 변경 시 존재 여부 확인
@@ -135,7 +135,7 @@ async def update_user(
         if not department:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="ErrorMessages.INVALID_DEPARTMENT"
+                detail=ErrorMessages.INVALID_DEPARTMENT
             )
 
     # 정보 업데이트
@@ -173,7 +173,7 @@ async def delete_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="ErrorMessages.USER_NOT_FOUND"
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     await db.delete(user)
