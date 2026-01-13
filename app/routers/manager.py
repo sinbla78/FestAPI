@@ -12,6 +12,7 @@ from app.schemas.manager import (
 )
 from app.services.manager_service import ManagerService
 from app.services.password_service import PasswordService
+from app.core.messages import ErrorMessages
 
 router = APIRouter(prefix="/manager", tags=["관리자"])
 
@@ -37,7 +38,7 @@ async def manager_signup(
     if existing_manager:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 존재하는 아이디입니다."
+            detail=ErrorMessages.MANAGER_ALREADY_EXISTS
         )
 
     # 비밀번호 해싱
@@ -77,14 +78,14 @@ async def manager_login(
     if not manager:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="아이디 또는 비밀번호가 올바르지 않습니다."
+            detail=ErrorMessages.INVALID_CREDENTIALS
         )
 
     # 비밀번호 검증
     if not PasswordService.verify_password(login_data.password, manager.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="아이디 또는 비밀번호가 올바르지 않습니다."
+            detail=ErrorMessages.INVALID_CREDENTIALS
         )
 
     # 토큰 생성
@@ -117,7 +118,7 @@ async def get_current_manager(
     if not manager:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="관리자를 찾을 수 없습니다."
+            detail=ErrorMessages.MANAGER_NOT_FOUND
         )
 
     return manager
