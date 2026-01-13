@@ -14,6 +14,7 @@ from app.schemas.term_employee import (
     TermEmployeeResponse
 )
 from app.services.user_service import UserService
+from app.core.messages import ErrorMessages
 
 router = APIRouter(prefix="/term-employees", tags=["기간제 인력"])
 
@@ -43,7 +44,7 @@ async def search_term_employees(
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)"
+                detail=ErrorMessages.INVALID_DATE_FORMAT
             )
 
     # 검색 실행
@@ -91,7 +92,7 @@ async def get_term_employee(
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="기간제 인력을 찾을 수 없습니다."
+            detail=ErrorMessages.EMPLOYEE_NOT_FOUND
         )
 
     return employee
@@ -119,7 +120,7 @@ async def create_term_employee(
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="존재하지 않는 부서입니다."
+            detail=ErrorMessages.INVALID_DEPARTMENT
         )
 
     # 기간제 인력 생성
@@ -166,7 +167,7 @@ async def update_term_employee(
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="기간제 인력을 찾을 수 없습니다."
+            detail=ErrorMessages.EMPLOYEE_NOT_FOUND
         )
 
     # 부서 변경 시 존재 여부 확인
@@ -179,7 +180,7 @@ async def update_term_employee(
         if not department:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="존재하지 않는 부서입니다."
+                detail=ErrorMessages.INVALID_DEPARTMENT
             )
 
     # 정보 업데이트
@@ -214,7 +215,7 @@ async def delete_term_employee(
     if not employee:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="기간제 인력을 찾을 수 없습니다."
+            detail=ErrorMessages.EMPLOYEE_NOT_FOUND
         )
 
     await db.delete(employee)
