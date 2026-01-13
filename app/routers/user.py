@@ -15,6 +15,7 @@ from app.schemas.user_auth import (
 )
 from app.services.user_service import UserService
 from app.services.password_service import PasswordService
+from app.core.messages import ErrorMessages, SuccessMessages
 
 router = APIRouter(prefix="/user", tags=["사용자"])
 
@@ -39,14 +40,14 @@ async def user_login(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="아이디 또는 비밀번호가 올바르지 않습니다."
+            detail=ErrorMessages.INVALID_CREDENTIALS
         )
 
     # 비밀번호 검증
     if not PasswordService.verify_password(login_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="아이디 또는 비밀번호가 올바르지 않습니다."
+            detail=ErrorMessages.INVALID_CREDENTIALS
         )
 
     # 토큰 생성
@@ -82,14 +83,14 @@ async def update_first_login_info(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     # 첫 로그인이 아닌 경우
     if not user.is_first_login:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 첫 로그인 정보를 입력했습니다."
+            detail=ErrorMessages.ALREADY_COMPLETED_FIRST_LOGIN
         )
 
     # 부서 존재 여부 확인
@@ -101,7 +102,7 @@ async def update_first_login_info(
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="존재하지 않는 부서입니다."
+            detail=ErrorMessages.INVALID_DEPARTMENT
         )
 
     # 정보 업데이트
@@ -136,7 +137,7 @@ async def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     return user
@@ -163,7 +164,7 @@ async def update_user_info(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     # 부서 변경 시 존재 여부 확인
@@ -176,7 +177,7 @@ async def update_user_info(
         if not department:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="존재하지 않는 부서입니다."
+                detail=ErrorMessages.INVALID_DEPARTMENT
             )
 
     # 정보 업데이트
@@ -214,14 +215,14 @@ async def change_password(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     # 현재 비밀번호 확인
     if not PasswordService.verify_password(password_data.current_password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="현재 비밀번호가 올바르지 않습니다."
+            detail=ErrorMessages.INVALID_CURRENT_PASSWORD
         )
 
     # 새 비밀번호로 변경
@@ -229,4 +230,4 @@ async def change_password(
 
     await db.commit()
 
-    return {"message": "비밀번호가 성공적으로 변경되었습니다."}
+    return {"message": SuccessMessages.PASSWORD_CHANGED}
