@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.messages import ErrorMessages
 from app.db.models.manager import Manager
 from app.services.password_service import PasswordService
 
@@ -66,7 +67,7 @@ class ManagerService:
             if username is None or role != "manager":
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication credentials",
+                    detail=ErrorMessages.TOKEN_INVALID,
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
@@ -81,13 +82,13 @@ class ManagerService:
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has expired",
+                detail=ErrorMessages.TOKEN_EXPIRED,
                 headers={"WWW-Authenticate": "Bearer"},
             )
         except jwt.PyJWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
+                detail=ErrorMessages.TOKEN_INVALID,
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
