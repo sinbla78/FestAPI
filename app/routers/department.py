@@ -13,6 +13,7 @@ from app.schemas.department import (
 )
 from app.services.user_service import UserService
 from app.services.manager_service import ManagerService
+from app.core.messages import ErrorMessages
 
 router = APIRouter(prefix="/departments", tags=["부서"])
 
@@ -51,7 +52,7 @@ async def get_department(
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="부서를 찾을 수 없습니다."
+            detail=ErrorMessages.DEPARTMENT_NOT_FOUND
         )
 
     return department
@@ -79,7 +80,7 @@ async def create_department(
     if existing_department:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="이미 존재하는 부서명입니다."
+            detail=ErrorMessages.DEPARTMENT_ALREADY_EXISTS
         )
 
     # 부서 생성
@@ -117,7 +118,7 @@ async def update_department(
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="부서를 찾을 수 없습니다."
+            detail=ErrorMessages.DEPARTMENT_NOT_FOUND
         )
 
     # 부서명 중복 확인 (변경하는 경우)
@@ -133,7 +134,7 @@ async def update_department(
         if existing_department:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="이미 존재하는 부서명입니다."
+                detail=ErrorMessages.DEPARTMENT_ALREADY_EXISTS
             )
 
     # 정보 업데이트
@@ -169,7 +170,7 @@ async def delete_department(
     if not department:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="부서를 찾을 수 없습니다."
+            detail=ErrorMessages.DEPARTMENT_NOT_FOUND
         )
 
     await db.delete(department)
