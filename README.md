@@ -358,6 +358,27 @@ pip install asyncpg psycopg2-binary
 2. `app/routers/`에 라우터 생성
 3. `app/main.py`에 라우터 등록
 
+## 🎨 코드 품질
+
+### 메시지 상수화
+
+프로젝트 전반에 걸쳐 하드코딩된 에러/성공 메시지를 상수로 관리합니다.
+
+- **위치**: `app/core/messages.py`
+- **클래스**:
+  - `ErrorMessages`: 모든 에러 메시지 상수
+  - `SuccessMessages`: 성공 메시지 상수
+
+**적용 범위**:
+- ✅ 라우터 (routers/)
+- ✅ 서비스 (services/)
+- ✅ Pydantic 스키마 (schemas/)
+
+**장점**:
+- 중복 문자열 제거로 유지보수성 향상
+- 일관된 메시지 관리
+- SonarLint 코드 품질 규칙 준수
+
 ## 👨‍💻 Author
 
 FestAPI Team
