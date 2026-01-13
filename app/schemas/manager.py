@@ -2,6 +2,8 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
+from app.core.messages import ErrorMessages
+
 
 class ManagerBase(BaseModel):
     """관리자 기본 스키마"""
@@ -20,7 +22,7 @@ class ManagerCreate(BaseModel):
     def validate_password(cls, v: str) -> str:
         """비밀번호 검증"""
         if len(v) < 8 or len(v) > 30:
-            raise ValueError("비밀번호는 8자~30자까지 작성할 수 있습니다.")
+            raise ValueError(ErrorMessages.PASSWORD_LENGTH_INVALID)
         return v
 
     class Config:

@@ -2,6 +2,8 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 
+from app.core.messages import ErrorMessages
+
 
 class UserCreate(BaseModel):
     """사용자 계정 생성 스키마 (관리자용)"""
@@ -13,7 +15,7 @@ class UserCreate(BaseModel):
     def validate_password(cls, v: str) -> str:
         """비밀번호 검증"""
         if len(v) < 8 or len(v) > 30:
-            raise ValueError("비밀번호는 8자~30자까지 작성할 수 있습니다.")
+            raise ValueError(ErrorMessages.PASSWORD_LENGTH_INVALID)
         return v
 
     class Config:
@@ -51,7 +53,7 @@ class FirstLoginInfoUpdate(BaseModel):
     def validate_password(cls, v: str) -> str:
         """비밀번호 검증"""
         if len(v) < 8 or len(v) > 30:
-            raise ValueError("비밀번호는 8자~30자까지 작성할 수 있습니다.")
+            raise ValueError(ErrorMessages.PASSWORD_LENGTH_INVALID)
         return v
 
     class Config:
@@ -92,7 +94,7 @@ class PasswordChange(BaseModel):
     def validate_new_password(cls, v: str) -> str:
         """새 비밀번호 검증"""
         if len(v) < 8 or len(v) > 30:
-            raise ValueError("비밀번호는 8자~30자까지 작성할 수 있습니다.")
+            raise ValueError(ErrorMessages.PASSWORD_LENGTH_INVALID)
         return v
 
     @field_validator("new_password_confirm")
@@ -100,7 +102,7 @@ class PasswordChange(BaseModel):
     def passwords_match(cls, v: str, info) -> str:
         """비밀번호 확인 일치 검증"""
         if "new_password" in info.data and v != info.data["new_password"]:
-            raise ValueError("새 비밀번호와 새 비밀번호 확인이 일치하지 않습니다.")
+            raise ValueError(ErrorMessages.PASSWORDS_DO_NOT_MATCH)
         return v
 
     class Config:
