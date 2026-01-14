@@ -45,6 +45,8 @@ class ErrorMessages:
 
     # 날짜 형식 관련
     INVALID_DATE_FORMAT = "생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)"
+    # 입력 검증 관련
+    EMPTY_INPUT_NOT_ALLOWED = "공백만 입력할 수 없습니다."
 
     # 공통 예외 메시지
     BAD_REQUEST = "잘못된 요청입니다."

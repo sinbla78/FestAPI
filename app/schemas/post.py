@@ -1,6 +1,8 @@
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.messages import ErrorMessages
+
 
 class Post(BaseModel):
     """게시글 모델"""
@@ -46,7 +48,7 @@ class PostCreate(BaseModel):
     def validate_not_empty(cls, v: str) -> str:
         """공백만 있는 문자열 방지"""
         if not v or not v.strip():
-            raise ValueError("공백만 입력할 수 없습니다.")
+            raise ValueError(ErrorMessages.EMPTY_INPUT_NOT_ALLOWED)
         return v.strip()
 
     class Config:
@@ -81,7 +83,7 @@ class PostUpdate(BaseModel):
         """공백만 있는 문자열 방지"""
         if v is not None:
             if not v.strip():
-                raise ValueError("공백만 입력할 수 없습니다.")
+                raise ValueError(ErrorMessages.EMPTY_INPUT_NOT_ALLOWED)
             return v.strip()
         return v
 
