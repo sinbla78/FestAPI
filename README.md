@@ -6,10 +6,12 @@ FastAPI 기반 기간제 인력 관리 REST API 서버
 
 - 👤 **이중 인증 시스템** - 관리자/사용자 분리된 인증
 - 🔐 **JWT 인증** - Access Token (24h) + Refresh Token (7d)
+- 🌐 **OAuth 2.0 지원** - Google, Apple, Naver, Kakao 소셜 로그인
 - 🆕 **첫 로그인 체크** - 초기 정보 입력 플로우
 - 👥 **기간제 인력 관리** - 인적사항 등록/수정/검색
 - 🏢 **부서 관리** - 부서별 인력 관리
 - 🔑 **계정 관리** - 관리자의 사용자 계정 CRUD
+- 📝 **게시글 관리** - 사용자 게시글 작성 및 관리
 - 🐳 **Docker 지원** - 컨테이너화된 배포
 
 ## 📋 시스템 요구사항
@@ -170,6 +172,28 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `POST /departments` - 부서 생성 🔒👑
 - `PUT /departments/{department_id}` - 부서 수정 🔒👑
 - `DELETE /departments/{department_id}` - 부서 삭제 🔒👑
+
+### OAuth 인증
+- `GET /auth/google` - Google OAuth 로그인 시작
+- `GET /auth/google/callback` - Google OAuth 콜백
+- `GET /auth/apple` - Apple OAuth 로그인 시작
+- `POST /auth/apple/callback` - Apple OAuth 콜백
+- `GET /auth/naver` - Naver OAuth 로그인 시작
+- `GET /auth/naver/callback` - Naver OAuth 콜백
+- `GET /auth/kakao` - Kakao OAuth 로그인 시작
+- `GET /auth/kakao/callback` - Kakao OAuth 콜백
+- `GET /auth/me` - 현재 사용자 정보 조회 🔒
+- `PUT /auth/me` - 사용자 정보 수정 🔒
+- `POST /auth/logout` - 로그아웃 🔒
+- `POST /auth/refresh` - 액세스 토큰 갱신
+
+### 게시글
+- `POST /posts` - 게시글 작성 🔒
+- `GET /posts` - 게시글 목록 조회
+- `GET /posts/me` - 내가 작성한 게시글 조회 🔒
+- `GET /posts/{post_id}` - 게시글 상세 조회
+- `PUT /posts/{post_id}` - 게시글 수정 🔒
+- `DELETE /posts/{post_id}` - 게시글 삭제 🔒
 
 🔒 = 인증 필요 | 👑 = 관리자 전용
 
