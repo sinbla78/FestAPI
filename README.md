@@ -403,6 +403,57 @@ pip install asyncpg psycopg2-binary
 - 일관된 메시지 관리
 - SonarLint 코드 품질 규칙 준수
 
+**사용 예시**:
+```python
+from app.core.messages import ErrorMessages, SuccessMessages
+
+# 에러 메시지 사용
+raise HTTPException(
+    status_code=status.HTTP_404_NOT_FOUND,
+    detail=ErrorMessages.USER_NOT_FOUND
+)
+
+# 성공 메시지 사용
+return {"message": SuccessMessages.PASSWORD_CHANGED}
+```
+
+### 커스텀 예외 클래스
+
+`app/core/exceptions.py`에 정의된 커스텀 예외 클래스를 사용할 수 있습니다.
+
+**사용 가능한 예외**:
+- `BadRequestException` - 잘못된 요청 (400)
+- `UnauthorizedException` - 인증 실패 (401)
+- `ForbiddenException` - 권한 없음 (403)
+- `NotFoundException` - 리소스 없음 (404)
+- `ConflictException` - 리소스 충돌 (409)
+- `InternalServerException` - 서버 오류 (500)
+
+**사용 예시**:
+```python
+from app.core.exceptions import NotFoundException
+
+# 기본 메시지 사용
+raise NotFoundException()
+
+# 커스텀 메시지 사용
+raise NotFoundException(detail="특정 리소스를 찾을 수 없습니다.")
+```
+
+### Rate Limiting
+
+요청 횟수 제한 미들웨어가 적용되어 있습니다.
+
+**기본 설정**:
+- 분당 60회 요청 제한
+- 시간당 1000회 요청 제한
+- Health check 엔드포인트는 제한 제외
+
+**응답 헤더**:
+- `X-RateLimit-Limit`: 최대 요청 횟수
+- `X-RateLimit-Remaining`: 남은 요청 횟수
+- `Retry-After`: 재시도 가능 시간 (초)
+
 ## 👨‍💻 Author
 
 FestAPI Team
