@@ -1,9 +1,18 @@
-"""API 응답 메시지 상수 정의"""
+"""
+API 응답 메시지 상수 정의
+
+이 모듈은 애플리케이션 전반에 걸쳐 사용되는 에러 메시지와 성공 메시지를 중앙화하여 관리합니다.
+메시지를 상수로 정의함으로써 코드 중복을 방지하고 일관성을 유지합니다.
+"""
 
 
-# 공통 에러 메시지
 class ErrorMessages:
-    """에러 메시지 상수"""
+    """
+    에러 메시지 상수
+
+    애플리케이션에서 발생하는 모든 에러 메시지를 정의합니다.
+    카테고리별로 구분되어 있어 쉽게 찾고 관리할 수 있습니다.
+    """
 
     # 인증 관련
     INVALID_CREDENTIALS = "아이디 또는 비밀번호가 올바르지 않습니다."
@@ -43,9 +52,8 @@ class ErrorMessages:
     PASSWORD_LENGTH_INVALID = "비밀번호는 8자~30자까지 작성할 수 있습니다."
     PASSWORDS_DO_NOT_MATCH = "새 비밀번호와 새 비밀번호 확인이 일치하지 않습니다."
 
-    # 날짜 형식 관련
-    INVALID_DATE_FORMAT = "생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)"
     # 입력 검증 관련
+    INVALID_DATE_FORMAT = "생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)"
     EMPTY_INPUT_NOT_ALLOWED = "공백만 입력할 수 없습니다."
 
     # 공통 예외 메시지
@@ -60,7 +68,11 @@ class ErrorMessages:
 
 
 class SuccessMessages:
-    """성공 메시지 상수"""
+    """
+    성공 메시지 상수
+
+    작업이 성공적으로 완료되었을 때 사용되는 메시지를 정의합니다.
+    """
 
     # 비밀번호 관련
     PASSWORD_CHANGED = "비밀번호가 성공적으로 변경되었습니다."
