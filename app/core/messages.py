@@ -28,6 +28,11 @@ class ErrorMessages:
     # 기간제 인력 관련
     EMPLOYEE_NOT_FOUND = "기간제 인력을 찾을 수 없습니다."
 
+    # 게시글 관련
+    POST_NOT_FOUND = "게시글을 찾을 수 없습니다."
+    POST_UPDATE_FORBIDDEN = "게시글을 수정할 권한이 없습니다."
+    POST_DELETE_FORBIDDEN = "게시글을 삭제할 권한이 없습니다."
+
     # 첫 로그인 관련
     ALREADY_COMPLETED_FIRST_LOGIN = "이미 첫 로그인 정보를 입력했습니다."
 

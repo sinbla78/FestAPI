@@ -5,6 +5,7 @@ from app.models import User
 from app.schemas import Post, PostCreate, PostUpdate
 from app.services import AuthService
 from app.core.database import db
+from app.core.messages import ErrorMessages
 
 router = APIRouter(prefix="/posts", tags=["게시글"])
 
@@ -147,7 +148,7 @@ async def get_post(post_id: str) -> Post:
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글을 찾을 수 없습니다."
+            detail=ErrorMessages.POST_NOT_FOUND
         )
     return post
 
@@ -180,14 +181,14 @@ async def update_post(
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글을 찾을 수 없습니다."
+            detail=ErrorMessages.POST_NOT_FOUND
         )
 
     # 작성자 확인
     if post.author_email != current_user.email:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="게시글을 수정할 권한이 없습니다."
+            detail=ErrorMessages.POST_UPDATE_FORBIDDEN
         )
 
     update_data = post_update.dict(exclude_unset=True)
@@ -222,14 +223,14 @@ async def delete_post(
     if not post:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="게시글을 찾을 수 없습니다."
+            detail=ErrorMessages.POST_NOT_FOUND
         )
 
     # 작성자 확인
     if post.author_email != current_user.email:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="게시글을 삭제할 권한이 없습니다."
+            detail=ErrorMessages.POST_DELETE_FORBIDDEN
         )
 
     db.delete_post(post_id)
