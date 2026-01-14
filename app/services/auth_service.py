@@ -5,6 +5,7 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.core.config import settings
+from app.core.messages import ErrorMessages
 from app.models import User
 from app.core.database import db
 
@@ -56,7 +57,7 @@ class AuthService:
         if db.is_token_blacklisted(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has been revoked",
+                detail=ErrorMessages.TOKEN_REVOKED,
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -72,7 +73,7 @@ class AuthService:
             if email is None:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication credentials",
+                    detail=ErrorMessages.TOKEN_INVALID,
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
@@ -88,13 +89,13 @@ class AuthService:
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has expired",
+                detail=ErrorMessages.TOKEN_EXPIRED,
                 headers={"WWW-Authenticate": "Bearer"},
             )
         except jwt.PyJWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
+                detail=ErrorMessages.TOKEN_INVALID,
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -105,7 +106,7 @@ class AuthService:
         if db.is_token_blacklisted(token):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has been revoked",
+                detail=ErrorMessages.TOKEN_REVOKED,
             )
 
         try:
@@ -120,19 +121,19 @@ class AuthService:
             if email is None or typ != "refresh":
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid refresh token",
+                    detail=ErrorMessages.TOKEN_INVALID,
                 )
 
             return email
         except jwt.ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Refresh token has expired",
+                detail=ErrorMessages.TOKEN_EXPIRED,
             )
         except jwt.PyJWTError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token",
+                detail=ErrorMessages.TOKEN_INVALID,
             )
 
     @staticmethod
@@ -142,6 +143,6 @@ class AuthService:
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
+                detail=ErrorMessages.USER_NOT_FOUND
             )
         return user
