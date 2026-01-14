@@ -4,6 +4,7 @@ from typing import List
 from app.services import AuthService
 from app.models import User
 from app.core.database import db
+from app.core.messages import ErrorMessages
 
 router = APIRouter(prefix="/users", tags=["사용자"])
 
@@ -89,6 +90,6 @@ async def get_user_by_email(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail=ErrorMessages.USER_NOT_FOUND
         )
     return user
