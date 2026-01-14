@@ -54,6 +54,7 @@ class ErrorMessages:
     CONFLICT = "리소스 충돌이 발생했습니다."
     INTERNAL_SERVER_ERROR = "서버 내부 오류가 발생했습니다."
     VALIDATION_ERROR = "입력 데이터 검증에 실패했습니다."
+    RATE_LIMIT_EXCEEDED = "요청 횟수 제한을 초과했습니다. 잠시 후 다시 시도해주세요."
 
 
 class SuccessMessages:

@@ -6,6 +6,8 @@ from typing import Dict, Tuple
 from collections import defaultdict
 import asyncio
 
+from app.core.messages import ErrorMessages
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
@@ -44,7 +46,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 content={
                     "error": {
                         "code": "RATE_LIMIT_EXCEEDED",
-                        "message": "요청 횟수 제한을 초과했습니다. 잠시 후 다시 시도해주세요.",
+                        "message": ErrorMessages.RATE_LIMIT_EXCEEDED,
                         "retry_after": retry_after
                     }
                 },
