@@ -8,6 +8,7 @@ from app.services.auth_service import security
 from app.models import User, OAuthProvider, UserResponse, TokenResponse
 from app.schemas import UserUpdate
 from app.core.database import db
+from app.core.messages import ErrorMessages, SuccessMessages
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/auth", tags=["인증"])
@@ -281,7 +282,7 @@ async def update_current_user(
     if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="사용자를 찾을 수 없습니다."
+            detail=ErrorMessages.USER_NOT_FOUND
         )
 
     return updated_user
@@ -312,7 +313,7 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security)):
     db.remove_session(token)
     # 토큰을 블랙리스트에 추가하여 재사용 방지
     db.add_to_blacklist(token)
-    return {"message": "성공적으로 로그아웃되었습니다."}
+    return {"message": SuccessMessages.LOGOUT_SUCCESS}
 
 
 # 리프레시 토큰 요청 스키마
@@ -350,7 +351,7 @@ async def refresh_access_token(request: RefreshTokenRequest) -> TokenResponse:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail=ErrorMessages.USER_NOT_FOUND
         )
     tokens = AuthService.create_tokens(email)
     db.add_session(tokens["access_token"], email)
@@ -384,7 +385,7 @@ async def cleanup_blacklist():
     """만료된 블랙리스트 토큰 정리"""
     cleaned_count = db.cleanup_expired_blacklist()
     return {
-        "message": "만료된 블랙리스트 토큰이 정리되었습니다.",
+        "message": SuccessMessages.BLACKLIST_CLEANED,
         "cleaned_count": cleaned_count
     }
 
