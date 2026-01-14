@@ -454,6 +454,27 @@ raise NotFoundException(detail="특정 리소스를 찾을 수 없습니다.")
 - `X-RateLimit-Remaining`: 남은 요청 횟수
 - `Retry-After`: 재시도 가능 시간 (초)
 
+## 📜 변경 이력
+
+### v1.1.0 - 코드 품질 개선 (2026-01-14)
+
+**메시지 상수화 리팩토링**
+- 전체 프로젝트에 걸쳐 하드코딩된 문자열 메시지를 상수로 통합
+- `app/core/messages.py`에 ErrorMessages 및 SuccessMessages 클래스 정의
+- 10+ 개의 라우터, 서비스, 스키마 파일에 적용
+- SonarLint S1192 규칙 준수로 코드 품질 향상
+
+**문서화 개선**
+- OAuth 2.0 및 게시글 API 엔드포인트 문서 추가
+- 커스텀 예외 클래스 사용 가이드 추가
+- Rate Limiting 설정 및 사용법 문서화
+- 코드 예시를 포함한 개발자 가이드 확장
+
+**구조 개선**
+- 예외 처리 메시지 상수화로 일관성 확보
+- 미들웨어 메시지 통합 관리
+- Pydantic 스키마 검증 메시지 표준화
+
 ## 👨‍💻 Author
 
 FestAPI Team
