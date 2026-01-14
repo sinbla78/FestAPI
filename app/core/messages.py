@@ -46,6 +46,15 @@ class ErrorMessages:
     # 날짜 형식 관련
     INVALID_DATE_FORMAT = "생년월일 형식이 올바르지 않습니다. (YYYY-MM-DD)"
 
+    # 공통 예외 메시지
+    BAD_REQUEST = "잘못된 요청입니다."
+    UNAUTHORIZED_FAILED = "인증에 실패했습니다."
+    FORBIDDEN = "권한이 없습니다."
+    RESOURCE_NOT_FOUND = "요청한 리소스를 찾을 수 없습니다."
+    CONFLICT = "리소스 충돌이 발생했습니다."
+    INTERNAL_SERVER_ERROR = "서버 내부 오류가 발생했습니다."
+    VALIDATION_ERROR = "입력 데이터 검증에 실패했습니다."
+
 
 class SuccessMessages:
     """성공 메시지 상수"""

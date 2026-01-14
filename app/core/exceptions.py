@@ -2,6 +2,7 @@ from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from app.core.logging import logger
+from app.core.messages import ErrorMessages
 from typing import Union
 
 
@@ -21,7 +22,7 @@ class APIException(HTTPException):
 class BadRequestException(APIException):
     """잘못된 요청 예외"""
 
-    def __init__(self, detail: str = "잘못된 요청입니다.", error_code: str = "BAD_REQUEST"):
+    def __init__(self, detail: str = ErrorMessages.BAD_REQUEST, error_code: str = "BAD_REQUEST"):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=detail,
@@ -32,7 +33,7 @@ class BadRequestException(APIException):
 class UnauthorizedException(APIException):
     """인증 실패 예외"""
 
-    def __init__(self, detail: str = "인증에 실패했습니다.", error_code: str = "UNAUTHORIZED"):
+    def __init__(self, detail: str = ErrorMessages.UNAUTHORIZED_FAILED, error_code: str = "UNAUTHORIZED"):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=detail,
@@ -43,7 +44,7 @@ class UnauthorizedException(APIException):
 class ForbiddenException(APIException):
     """권한 없음 예외"""
 
-    def __init__(self, detail: str = "권한이 없습니다.", error_code: str = "FORBIDDEN"):
+    def __init__(self, detail: str = ErrorMessages.FORBIDDEN, error_code: str = "FORBIDDEN"):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=detail,
@@ -54,7 +55,7 @@ class ForbiddenException(APIException):
 class NotFoundException(APIException):
     """리소스를 찾을 수 없음 예외"""
 
-    def __init__(self, detail: str = "요청한 리소스를 찾을 수 없습니다.", error_code: str = "NOT_FOUND"):
+    def __init__(self, detail: str = ErrorMessages.RESOURCE_NOT_FOUND, error_code: str = "NOT_FOUND"):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail,
@@ -65,7 +66,7 @@ class NotFoundException(APIException):
 class ConflictException(APIException):
     """리소스 충돌 예외"""
 
-    def __init__(self, detail: str = "리소스 충돌이 발생했습니다.", error_code: str = "CONFLICT"):
+    def __init__(self, detail: str = ErrorMessages.CONFLICT, error_code: str = "CONFLICT"):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
             detail=detail,
@@ -76,7 +77,7 @@ class ConflictException(APIException):
 class InternalServerException(APIException):
     """서버 내부 오류 예외"""
 
-    def __init__(self, detail: str = "서버 내부 오류가 발생했습니다.", error_code: str = "INTERNAL_SERVER_ERROR"):
+    def __init__(self, detail: str = ErrorMessages.INTERNAL_SERVER_ERROR, error_code: str = "INTERNAL_SERVER_ERROR"):
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=detail,
@@ -116,7 +117,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={
             "error": {
                 "code": "VALIDATION_ERROR",
-                "message": "입력 데이터 검증에 실패했습니다.",
+                "message": ErrorMessages.VALIDATION_ERROR,
                 "details": errors,
                 "path": str(request.url.path),
             }
@@ -132,7 +133,7 @@ async def general_exception_handler(request: Request, exc: Exception):
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": "서버 내부 오류가 발생했습니다.",
+                "message": ErrorMessages.INTERNAL_SERVER_ERROR,
                 "path": str(request.url.path),
             }
         },
